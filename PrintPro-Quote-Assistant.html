@@ -1,0 +1,1167 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>PrintPro Quote Follow-up Assistant</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo:wdth,wght@75..100,500..800&family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans:wght@400;500;600;700&display=swap">
+<style>
+/* Layout: navy header with a corrugated kraft edge, tab strip, one working column of white cards; drawer slides in from the right for quote detail. */
+:root{
+  --navy:#1F2A36; --navy-2:#2A3845; --navy-3:#3A4A5A;
+  --kraft:#C8873A; --kraft-deep:#9A6322; --kraft-tint:#F7ECDD;
+  --red:#C0392B; --red-tint:#FBEAE7;
+  --green:#2E7D5B; --green-tint:#E3F1EA;
+  --amber:#8F5E12; --amber-tint:#FBF0D9;
+  --blue:#2D5A86; --blue-tint:#E5EDF6;
+  --violet:#5A4A98; --violet-tint:#ECE9F6;
+  --bg:#EDF0F3; --card:#FFFFFF; --ink:#1F2A36; --muted:#5B6976; --line:#DBE1E7; --soft:#F5F7F9;
+  --on-navy:#FFFFFF; --on-navy-dim:#AFBBC6;
+  --console-ink:#DCE3EA; --c-ok:#7FD3AA; --c-bad:#F4917F; --c-skip:#9AA8B5; --c-ai:#9CC4EE; --c-warn:#F0C27A;
+  --f-display:'Archivo','Arial Narrow',system-ui,sans-serif;
+  --f-body:'IBM Plex Sans',system-ui,-apple-system,'Segoe UI',Roboto,sans-serif;
+  --f-mono:'IBM Plex Mono',ui-monospace,Menlo,Consolas,monospace;
+  color-scheme:light;
+}
+*{box-sizing:border-box}
+body{margin:0}
+img{max-width:100%}
+[hidden]{display:none!important}
+html{background:var(--bg)}
+body{background:var(--bg);color:var(--ink);font-family:var(--f-body);font-size:15px;line-height:1.5;-webkit-font-smoothing:antialiased}
+body.lock{overflow:hidden}
+.wrap{max-width:1240px;margin:0 auto;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px))}
+button,input,select,textarea{font:inherit;color:inherit}
+:focus-visible{outline:3px solid #6E9FD3;outline-offset:2px}
+.muted{color:var(--muted)}
+.mono{font-family:var(--f-mono);font-size:.88em}
+.num{text-align:right;font-variant-numeric:tabular-nums}
+
+/* Header */
+.top{background:var(--navy);color:var(--on-navy)}
+.top::after{content:"";display:block;height:7px;background:
+  radial-gradient(circle at 5px 7px,var(--kraft) 4.2px,transparent 4.8px) 0 0/10px 7px repeat-x,
+  linear-gradient(to bottom,transparent 4px,var(--kraft) 4px)}
+.top-inner{display:flex;align-items:center;justify-content:space-between;gap:12px 20px;flex-wrap:wrap;padding-block:14px 10px}
+.brand{display:flex;align-items:center;gap:12px;min-width:0}
+.brand svg{flex:none}
+.brand h1{margin:0;font-family:var(--f-display);font-stretch:82%;font-weight:760;font-size:21px;line-height:1.1;letter-spacing:.005em;text-wrap:balance}
+.brand small{display:block;color:var(--on-navy-dim);font-size:12px;letter-spacing:.09em;text-transform:uppercase;margin-top:2px}
+.top-ctrl{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+.top-ctrl label{font-size:12px;color:var(--on-navy-dim);text-transform:uppercase;letter-spacing:.08em}
+.top-ctrl select{background:var(--navy-2);color:var(--on-navy);border:1px solid var(--navy-3);border-radius:8px;padding:7px 10px;font-size:14px;max-width:100%}
+.pill{font-size:12px;font-weight:600;border-radius:999px;padding:4px 10px;background:var(--navy-2);color:var(--c-warn);border:1px solid var(--navy-3);white-space:nowrap}
+.tabs-wrap{overflow-x:auto;scrollbar-width:none}
+.tabs-wrap::-webkit-scrollbar{display:none}
+.tabs{display:flex;gap:2px;min-width:max-content}
+.tab{background:none;border:0;border-bottom:3px solid transparent;color:#C7D0D9;padding:10px 13px 9px;font-weight:500;font-size:14px;cursor:pointer;display:flex;align-items:center;gap:7px;white-space:nowrap}
+.tab:hover{color:var(--on-navy)}
+.tab.on{color:var(--on-navy);border-bottom-color:var(--kraft);font-weight:600}
+.badge{background:var(--kraft);color:var(--navy);font-size:11px;font-weight:700;border-radius:999px;padding:0 6px;min-width:19px;line-height:18px;text-align:center}
+.badge.red{background:var(--red);color:#fff}
+
+/* Page */
+main{display:block;padding-block:24px 28px}
+.page-h{display:flex;justify-content:space-between;align-items:flex-end;gap:14px 20px;flex-wrap:wrap;margin-bottom:18px}
+.page-h h2{margin:0;font-family:var(--f-display);font-stretch:86%;font-weight:760;font-size:28px;line-height:1.1;text-wrap:balance}
+.page-h p{margin:6px 0 0;color:var(--muted);max-width:68ch}
+.page-h .acts{display:flex;gap:8px;flex-wrap:wrap}
+.grid{display:grid;gap:16px}
+.card{background:var(--card);border:1px solid var(--line);border-radius:10px;padding:18px;min-width:0}
+.card h3{margin:0 0 12px;font-size:12.5px;font-weight:650;letter-spacing:.08em;text-transform:uppercase;color:var(--muted)}
+.card h4{margin:0 0 6px;font-family:var(--f-display);font-stretch:90%;font-size:18px;font-weight:700}
+.stack{display:flex;flex-direction:column;gap:16px}
+.row{display:flex;gap:10px;flex-wrap:wrap;align-items:center}
+.sp{flex:1}
+
+/* Buttons */
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:8px;border:1px solid var(--line);background:var(--card);color:var(--ink);border-radius:8px;padding:8px 14px;font-weight:600;font-size:14px;cursor:pointer;text-decoration:none;white-space:nowrap}
+.btn:hover{border-color:#B6C1CC;background:var(--soft)}
+.btn.primary{background:var(--kraft);border-color:var(--kraft-deep);color:var(--navy)}
+.btn.primary:hover{background:#D29247}
+.btn.navy{background:var(--navy);border-color:var(--navy);color:var(--on-navy)}
+.btn.navy:hover{background:var(--navy-2)}
+.btn.ok{background:var(--green);border-color:var(--green);color:#fff}
+.btn.danger{color:var(--red);border-color:#E8B9B3}
+.btn.danger:hover{background:var(--red-tint)}
+.btn.big{font-size:17px;padding:15px 24px;border-radius:10px;font-family:var(--f-display);font-stretch:92%;font-weight:720;letter-spacing:.01em}
+.btn.sm{padding:5px 10px;font-size:13px}
+.btn:disabled{opacity:.5;cursor:not-allowed}
+.link{background:none;border:0;padding:0;color:var(--blue);font-weight:600;cursor:pointer;text-decoration:underline;text-underline-offset:2px}
+
+/* Chips */
+.chip{display:inline-flex;align-items:center;gap:6px;font-size:12px;font-weight:600;padding:3px 9px 3px 8px;border-radius:999px;white-space:nowrap;line-height:1.4}
+.chip::before{content:"";width:7px;height:7px;border-radius:50%;background:currentColor;flex:none}
+.s-open,.t-blue{background:var(--blue-tint);color:var(--blue)}
+.s-replied{background:var(--violet-tint);color:var(--violet)}
+.s-wait,.t-amber{background:var(--amber-tint);color:var(--amber)}
+.s-won,.t-green{background:var(--green-tint);color:var(--green)}
+.s-lost{background:#E9ECEF;color:#3F4A55}
+.s-exp,.t-grey{background:#EEF0F2;color:#66717C}
+.s-err,.t-red{background:var(--red-tint);color:var(--red)}
+.rule{display:inline-grid;place-items:center;width:22px;height:22px;border-radius:5px;background:var(--kraft-tint);color:var(--kraft-deep);font-family:var(--f-mono);font-weight:600;font-size:12.5px;flex:none}
+
+/* KPI */
+.kpis{grid-template-columns:repeat(4,minmax(0,1fr))}
+.kpi{display:flex;flex-direction:column;gap:6px}
+.kpi .lbl{font-size:13px;color:var(--muted);font-weight:500}
+.kpi .n{font-family:var(--f-display);font-stretch:88%;font-size:42px;font-weight:720;line-height:1;font-variant-numeric:tabular-nums}
+.kpi .n.red{color:var(--red)} .kpi .n.amber{color:var(--amber)} .kpi .n.kraft{color:var(--kraft-deep)}
+.kpi .sub{font-size:12.5px;color:var(--muted)}
+.dash2{grid-template-columns:minmax(0,1.55fr) minmax(0,1fr)}
+.runhero{display:flex;flex-direction:column;gap:14px}
+.runhero p{margin:0;color:var(--muted);max-width:60ch}
+.why .big{font-family:var(--f-display);font-stretch:86%;font-size:30px;font-weight:740;line-height:1.05;font-variant-numeric:tabular-nums}
+.why dl{margin:0;display:grid;gap:14px}
+.why dt{font-size:13px;color:var(--muted)}
+.why dd{margin:2px 0 0}
+.bar{display:flex;height:12px;border-radius:3px;overflow:hidden;background:#E6EAEE;margin-top:8px}
+.bar span{display:block;height:100%}
+.legend{display:flex;gap:14px;flex-wrap:wrap;font-size:12.5px;color:var(--muted);margin-top:6px}
+.legend i{display:inline-block;width:10px;height:10px;border-radius:2px;margin-right:5px;vertical-align:-1px}
+
+/* Tables */
+.tbl-wrap{overflow-x:auto;margin:0 -18px;padding:0 18px}
+table{width:100%;border-collapse:collapse;font-variant-numeric:tabular-nums}
+th{text-align:left;font-size:11.5px;font-weight:650;letter-spacing:.07em;text-transform:uppercase;color:var(--muted);padding:9px 10px;border-bottom:1px solid var(--line);white-space:nowrap}
+td{padding:11px 10px;border-bottom:1px solid var(--line);vertical-align:top}
+tr:last-child td{border-bottom:0}
+tr.click{cursor:pointer}
+tr.click:hover td{background:var(--soft)}
+td .co{font-weight:600}
+td .sm{font-size:12.5px;color:var(--muted)}
+.due{color:var(--kraft-deep);font-weight:700}
+.filters{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:14px}
+.fbtn{border:1px solid var(--line);background:var(--card);border-radius:999px;padding:5px 12px;font-size:13px;font-weight:500;cursor:pointer}
+.fbtn.on{background:var(--navy);border-color:var(--navy);color:var(--on-navy)}
+
+/* Daily check */
+.check2{grid-template-columns:minmax(0,.9fr) minmax(0,1.3fr)}
+.rules{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:10px}
+.rules div{display:flex;gap:10px;align-items:flex-start;font-size:13.5px;line-height:1.4}
+.board{list-style:none;margin:0;padding:0;display:flex;flex-direction:column}
+.brow{display:grid;grid-template-columns:92px minmax(0,1fr) auto;gap:10px;align-items:center;padding:10px 8px;border-bottom:1px solid var(--line);border-radius:6px}
+.brow:last-child{border-bottom:0}
+.brow .bco{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.brow.cur{background:var(--kraft-tint);box-shadow:inset 0 0 0 1px var(--kraft)}
+.console{background:var(--navy);color:var(--console-ink);font-family:var(--f-mono);font-size:12.8px;line-height:1.55;border-radius:10px;padding:14px 16px;height:470px;overflow:auto}
+.ln{display:flex;gap:8px;padding:1px 0}
+.ln .ic{width:14px;flex:none;text-align:center}
+.ln.k-head{color:var(--kraft);font-weight:600;margin-top:10px;padding-top:8px;border-top:1px dashed var(--navy-3)}
+.ln.k-head:first-child{margin-top:0;border-top:0;padding-top:0}
+.ln.k-ok .ic,.ln.k-send{color:var(--c-ok)} .ln.k-bad{color:var(--c-bad)} .ln.k-skip{color:var(--c-skip)} .ln.k-ai{color:var(--c-ai)} .ln.k-warn{color:var(--c-warn)} .ln.k-sum{color:#fff;font-weight:600;margin-top:10px}
+.console .ph-note{color:var(--c-skip)}
+.summary{display:grid;grid-template-columns:repeat(auto-fit,minmax(130px,1fr));gap:10px}
+.summary div{background:var(--soft);border-radius:8px;padding:10px 12px}
+.summary b{display:block;font-family:var(--f-display);font-size:26px;font-stretch:88%;line-height:1.1}
+
+/* AI draft */
+.draft3{grid-template-columns:minmax(0,1fr) minmax(0,1.25fr) minmax(0,.95fr);align-items:start}
+.step{display:flex;align-items:center;gap:8px;margin:0 0 12px;font-size:12.5px;font-weight:650;letter-spacing:.08em;text-transform:uppercase;color:var(--muted)}
+.step b{display:inline-grid;place-items:center;width:22px;height:22px;border-radius:50%;background:var(--navy);color:var(--on-navy);font-size:12px;letter-spacing:0}
+pre.prompt{margin:0;white-space:pre-wrap;word-break:break-word;font-family:var(--f-mono);font-size:12.3px;line-height:1.55;background:var(--soft);border:1px solid var(--line);border-radius:8px;padding:12px;max-height:520px;overflow:auto}
+.ph{background:var(--kraft-tint);color:var(--kraft-deep);border-radius:4px;padding:0 3px;font-weight:600}
+.field{display:flex;flex-direction:column;gap:5px;margin-bottom:12px}
+.field label{font-size:12.5px;font-weight:600;color:var(--muted)}
+.field input,.field select,.field textarea{border:1px solid var(--line);border-radius:8px;padding:9px 11px;background:var(--card);width:100%;min-width:0}
+.field input:disabled,.field select:disabled{background:var(--soft);color:var(--muted)}
+textarea.mail{font-family:var(--f-mono);font-size:12.6px;line-height:1.55;min-height:330px;resize:vertical}
+.checks{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:7px}
+.checks li{display:flex;gap:10px;align-items:flex-start;padding:9px 10px;border-radius:8px;font-size:13.5px;line-height:1.35}
+.checks li.pass{background:var(--green-tint)}
+.checks li.fail{background:var(--red-tint)}
+.checks .ci{flex:none;width:20px;height:20px;border-radius:50%;display:grid;place-items:center;color:#fff;font-size:12px;font-weight:700;margin-top:1px}
+.checks .pass .ci{background:var(--green)} .checks .fail .ci{background:var(--red)}
+.checks small{display:block;color:var(--muted);font-size:12.3px;margin-top:2px;word-break:break-word}
+.verdict{border-radius:8px;padding:12px 14px;margin-top:12px;font-size:14px;line-height:1.45}
+.verdict.pass{background:var(--green);color:#fff}
+.verdict.fail{background:var(--red);color:#fff}
+.verdict.pre{background:var(--soft);color:var(--muted);border:1px dashed var(--line)}
+.verdict strong{display:block;font-family:var(--f-display);font-stretch:90%;font-size:18px;letter-spacing:.02em}
+.mailview{border:1px solid var(--line);border-radius:8px;overflow:hidden}
+.mailview .mh{background:var(--soft);padding:10px 14px;border-bottom:1px solid var(--line);font-size:13.5px;display:grid;gap:2px}
+.mailview pre{margin:0;padding:14px;white-space:pre-wrap;word-break:break-word;font-family:var(--f-body);font-size:14px;line-height:1.55}
+.tag{display:inline-block;font-size:11.5px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;padding:2px 8px;border-radius:4px}
+.tag.red{background:var(--red-tint);color:var(--red)} .tag.green{background:var(--green-tint);color:var(--green)} .tag.amber{background:var(--amber-tint);color:var(--amber)} .tag.navy{background:var(--navy);color:var(--on-navy)}
+
+/* Reply simulator */
+.reply2{grid-template-columns:minmax(0,1fr) minmax(0,1fr);align-items:start}
+.presets{display:flex;flex-direction:column;gap:7px}
+.preset{text-align:left;border:1px solid var(--line);background:var(--card);border-radius:8px;padding:9px 12px;cursor:pointer;font-size:13.5px;line-height:1.35;display:flex;gap:10px;align-items:flex-start}
+.preset:hover{border-color:var(--kraft);background:var(--kraft-tint)}
+.preset .pk{flex:none;font-size:11px;font-weight:700;letter-spacing:.05em;text-transform:uppercase;color:var(--kraft-deep);background:var(--kraft-tint);border-radius:4px;padding:2px 6px;margin-top:1px;min-width:62px;text-align:center}
+.kv{display:grid;grid-template-columns:150px minmax(0,1fr);gap:0;border:1px solid var(--line);border-radius:8px;overflow:hidden}
+.kv>div{padding:10px 12px;border-bottom:1px solid var(--line)}
+.kv>div:nth-last-child(-n+2){border-bottom:0}
+.kv .k{background:var(--soft);font-size:12.5px;font-weight:600;color:var(--muted)}
+.bignum{font-family:var(--f-display);font-stretch:88%;font-size:30px;font-weight:740;line-height:1}
+.banner{border-radius:8px;padding:12px 14px;font-size:14px;display:flex;gap:10px;align-items:flex-start}
+.banner.red{background:var(--red-tint);color:#7E1F15;border:1px solid #EDBDB6}
+.banner.green{background:var(--green-tint);color:#1C553C;border:1px solid #B9DCCB}
+.banner.amber{background:var(--amber-tint);color:#6B4509;border:1px solid #EBD3A3}
+.banner.navy{background:var(--blue-tint);color:#1D3D5E;border:1px solid #C3D4E7}
+.banner b{font-weight:700}
+blockquote.msg{margin:0;padding:10px 14px;border-left:3px solid var(--kraft);background:var(--soft);border-radius:0 8px 8px 0;font-style:italic}
+
+/* Approvals */
+.appr{display:grid;grid-template-columns:minmax(0,1.3fr) minmax(0,1fr);gap:18px}
+.appr .facts{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px;margin-top:12px}
+.appr .facts div{background:var(--soft);border-radius:8px;padding:9px 11px}
+.appr .facts small{display:block;font-size:12px;color:var(--muted)}
+.appr .facts b{font-size:17px;font-variant-numeric:tabular-nums}
+.calc{background:var(--kraft-tint);border-radius:8px;padding:12px;font-size:13.5px}
+.calc .eq{font-family:var(--f-mono);font-size:12.5px;color:var(--kraft-deep);margin-top:4px;word-break:break-word}
+.calc b{font-size:20px;font-variant-numeric:tabular-nums}
+.pctin{display:flex;align-items:center;gap:6px}
+.pctin input{width:90px;border:1px solid var(--line);border-radius:8px;padding:8px 10px}
+
+/* Logs */
+.ltabs{display:flex;gap:4px;border-bottom:1px solid var(--line);margin:-4px -18px 14px;padding:0 18px;overflow-x:auto}
+.ltab{background:none;border:0;border-bottom:3px solid transparent;padding:10px 12px;font-weight:600;font-size:14px;color:var(--muted);cursor:pointer;white-space:nowrap}
+.ltab.on{color:var(--ink);border-bottom-color:var(--kraft)}
+.lv{display:inline-block;width:9px;height:9px;border-radius:50%;margin-right:6px;vertical-align:0}
+.lv.info{background:#8FA0B0} .lv.success{background:var(--green)} .lv.warn{background:#D6A23E} .lv.error{background:var(--red)}
+.arrow{color:var(--muted);padding:0 4px}
+.old{text-decoration:line-through;color:var(--muted)}
+.reasons{margin:4px 0 0;padding-left:18px;font-size:13px;color:var(--muted)}
+.empty{padding:26px 10px;text-align:center;color:var(--muted)}
+
+/* Settings */
+.set2{grid-template-columns:minmax(0,1fr) minmax(0,1fr);align-items:start}
+.toggle{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:10px 0;border-top:1px solid var(--line)}
+.toggle input{width:20px;height:20px;accent-color:var(--kraft)}
+.lockbox{border:1px dashed #D9B98E;background:var(--kraft-tint);border-radius:10px;padding:20px;text-align:center;color:var(--kraft-deep)}
+.conf{display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-bottom:12px}
+.can,.cannot{margin:0;padding-left:18px}
+.can li::marker{color:var(--green)} .cannot li::marker{color:var(--red)}
+
+/* Drawer */
+.scrim{position:fixed;inset:0;background:rgba(14,21,29,.48);z-index:40}
+.panel{position:fixed;top:0;right:0;bottom:0;width:min(600px,100%);background:var(--card);z-index:41;overflow-y:auto;box-shadow:-18px 0 40px rgba(14,21,29,.25);
+  padding:calc(18px + env(safe-area-inset-top,0px)) max(20px,env(safe-area-inset-right,0px)) calc(28px + env(safe-area-inset-bottom,0px)) 20px;animation:slide .2s ease-out}
+@keyframes slide{from{transform:translateX(30px);opacity:.6}to{transform:none;opacity:1}}
+.panel .ph-head{display:flex;justify-content:space-between;align-items:flex-start;gap:10px;margin-bottom:14px}
+.panel h3{margin:0;font-family:var(--f-display);font-stretch:86%;font-size:24px;font-weight:760;line-height:1.1}
+.stamp{font-family:var(--f-mono);font-weight:600;font-size:13px;color:var(--kraft-deep);border:1.5px solid var(--kraft);border-radius:4px;padding:1px 7px;display:inline-block;margin-bottom:6px;letter-spacing:.03em}
+.meta{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px 16px;margin:14px 0 18px;font-size:14px}
+.meta small{display:block;font-size:12px;color:var(--muted)}
+.sec{margin-top:20px}
+.sec>h5{margin:0 0 8px;font-size:12px;font-weight:650;letter-spacing:.08em;text-transform:uppercase;color:var(--muted)}
+.tl{list-style:none;margin:0;padding:0 0 0 18px;border-left:2px solid var(--line)}
+.tl li{position:relative;padding:0 0 12px 6px;font-size:13.8px;line-height:1.4}
+.tl li::before{content:"";position:absolute;left:-25px;top:4px;width:10px;height:10px;border-radius:50%;background:#9AA8B5;border:2px solid var(--card)}
+.tl li.send::before{background:var(--green)} .tl li.bad::before{background:var(--red)} .tl li.reply::before{background:var(--violet)} .tl li.wait::before{background:#D6A23E} .tl li.won::before{background:var(--green)}
+.tl small{display:block;color:var(--muted);font-size:12px}
+.dbox{border:1px solid var(--line);border-radius:8px;padding:12px;margin-bottom:10px}
+.dbox pre{white-space:pre-wrap;word-break:break-word;font-family:var(--f-body);font-size:13.5px;margin:8px 0;background:var(--soft);border-radius:6px;padding:10px}
+.x{background:none;border:1px solid var(--line);border-radius:8px;width:36px;height:36px;font-size:20px;line-height:1;cursor:pointer;flex:none}
+
+/* Toast */
+#toast{position:fixed;left:50%;transform:translateX(-50%);bottom:calc(20px + env(safe-area-inset-bottom,0px));z-index:60;display:flex;flex-direction:column;gap:8px;align-items:center;width:min(520px,calc(100% - 32px));pointer-events:none}
+.toast{background:var(--navy);color:var(--on-navy);border-radius:8px;padding:10px 16px;font-size:14px;box-shadow:0 8px 24px rgba(0,0,0,.2);animation:pop .2s ease-out}
+.toast.bad{background:var(--red)} .toast.ok{background:var(--green)}
+@keyframes pop{from{transform:translateY(8px);opacity:0}to{transform:none;opacity:1}}
+
+footer.foot{padding-block:18px 26px;color:var(--muted);font-size:13px;border-top:1px solid var(--line);text-align:center}
+
+@media (max-width:1000px){
+  .draft3{grid-template-columns:minmax(0,1fr)}
+  .dash2,.check2,.reply2,.set2,.appr{grid-template-columns:minmax(0,1fr)}
+  .rules{grid-template-columns:repeat(2,minmax(0,1fr))}
+}
+@media (max-width:640px){
+  .kpis{grid-template-columns:repeat(2,minmax(0,1fr))}
+  .kpi .n{font-size:34px}
+  .page-h h2{font-size:24px}
+  .rules{grid-template-columns:minmax(0,1fr)}
+  .console{height:380px}
+  .kv{grid-template-columns:minmax(0,1fr)}
+  .kv>div:nth-last-child(2){border-bottom:1px solid var(--line)}
+  .appr .facts{grid-template-columns:minmax(0,1fr) minmax(0,1fr)}
+  .meta{grid-template-columns:minmax(0,1fr)}
+  .brow{grid-template-columns:82px minmax(0,1fr);}
+  .brow>:last-child{grid-column:1/-1;justify-self:start}
+}
+@media (prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}}
+</style>
+</head>
+<body>
+<header class="top">
+  <div class="wrap top-inner">
+    <div class="brand">
+      <svg width="40" height="40" viewBox="0 0 40 40" aria-hidden="true">
+        <path d="M20 4 35 11v18L20 36 5 29V11z" fill="#C8873A"/>
+        <path d="M20 4 35 11 20 18 5 11z" fill="#DDA45F"/>
+        <path d="M20 18v18" stroke="#9A6322" stroke-width="1.5"/>
+        <path d="M12.5 7.5 27.5 14.5v5" stroke="#1F2A36" stroke-width="2.2" fill="none"/>
+      </svg>
+      <div>
+        <h1>PrintPro Quote Follow-up Assistant</h1>
+        <small>PrintPro Packaging · Ahmedabad</small>
+      </div>
+    </div>
+    <div class="top-ctrl">
+      <span class="pill" id="testpill">Test mode</span>
+      <label for="role">Viewing as</label>
+      <select id="role">
+        <option value="rohan">Rohan Mehta · Salesperson</option>
+        <option value="priya">Priya Desai · Salesperson</option>
+        <option value="head">Harsh Trivedi · Sales Head</option>
+      </select>
+    </div>
+  </div>
+  <div class="wrap tabs-wrap"><nav class="tabs" id="tabs" aria-label="Screens"></nav></div>
+</header>
+
+<main class="wrap" id="view"></main>
+
+<footer class="wrap foot">Group 9 – Vanshi Varia, Diya Shah, Tanisha Jethva | CIA 3 prototype | All data fictional</footer>
+
+<div id="drawer"></div>
+<div id="toast" aria-live="polite"></div>
+
+<script>
+/* ---------- Helpers ---------- */
+const MON=['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+const pad=n=>String(n).padStart(2,'0');
+const today=(()=>{const d=new Date();d.setHours(0,0,0,0);return d})();
+const addDays=(d,n)=>{const x=new Date(d);x.setDate(x.getDate()+n);return x};
+const at=(d,h,m)=>{const x=new Date(d);x.setHours(h,m,0,0);return x};
+const fmtD=d=>d?`${pad(d.getDate())} ${MON[d.getMonth()]} ${d.getFullYear()}`:'—';
+const fmtT=d=>`${pad(d.getHours())}:${pad(d.getMinutes())}:${pad(d.getSeconds())}`;
+const fmtDT=d=>`${fmtD(d)}, ${pad(d.getHours())}:${pad(d.getMinutes())}`;
+const daysBetween=(a,b)=>Math.round((at(b,12,0)-at(a,12,0))/86400000);
+const esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const $=s=>document.querySelector(s);
+const sleep=ms=>new Promise(r=>setTimeout(r,ms));
+// All money is held in paise (integers) so totals never drift.
+const inr=p=>{const r=Math.round(p);return '₹'+(r/100).toLocaleString('en-IN',{minimumFractionDigits:r%100?2:0,maximumFractionDigits:2})};
+const rate=p=>'₹'+(p/100).toLocaleString('en-IN',{minimumFractionDigits:2,maximumFractionDigits:2});
+const qty=n=>n.toLocaleString('en-IN');
+let _id=0; const uid=()=>++_id;
+
+/* ---------- Master data (fictional) ---------- */
+const PRICE_LIST=[
+  {code:'CB-3PLY-S',desc:'3-ply box small',unit:'pc',p:1400},
+  {code:'CB-3PLY-M',desc:'3-ply box medium',unit:'pc',p:1850},
+  {code:'CB-5PLY-L',desc:'5-ply box large',unit:'pc',p:4200},
+  {code:'LBL-PP-50',desc:'PP label 50x25mm',unit:'pc',p:85},
+  {code:'LBL-PP-100',desc:'PP label 100x50mm 4-colour',unit:'pc',p:240},
+  {code:'MB-DUP-M',desc:'Duplex mono carton',unit:'pc',p:975},
+  {code:'PB-PIZZA-10',desc:'Pizza box 10"',unit:'pc',p:1120},
+  {code:'TP-BOPP-48',desc:'Printed BOPP tape',unit:'roll',p:3800},
+];
+const PRICE=Object.fromEntries(PRICE_LIST.map(x=>[x.code,x]));
+const PEOPLE={
+  rohan:{name:'Rohan Mehta',role:'Salesperson'},
+  priya:{name:'Priya Desai',role:'Salesperson'},
+  head:{name:'Harsh Trivedi',role:'Sales Head'},
+};
+const STATUSES=['Open','Replied','Awaiting Approval','Won','Lost','Expired','Data Error'];
+const SCLS={'Open':'s-open','Replied':'s-replied','Awaiting Approval':'s-wait','Won':'s-won','Lost':'s-lost','Expired':'s-exp','Data Error':'s-err'};
+const FIELD={status:'Status',fu:'Follow-ups sent',email:'Customer e-mail',lastFollowUp:'Last follow-up',discountPct:'Approved discount %',revisedP:'Revised total'};
+
+const lines=q=>q.items.map(([code,n])=>{const it=PRICE[code];return {code,n,desc:it.desc,unit:it.unit,p:it.p,amt:n*it.p}});
+const total=q=>lines(q).reduce((s,l)=>s+l.amt,0);
+
+function initialState(){
+  const seed=[
+    {id:'PP-Q-1041',company:'Shreeji Pharma Pvt Ltd',contact:'Mr. Kiran Patel',email:'kiran.patel@shreejipharma.example',sp:'Rohan Mehta',items:[['CB-3PLY-M',1000],['LBL-PP-100',3500]],sent:-3,valid:12,status:'Open',fu:0},
+    {id:'PP-Q-1042',company:'Amrut Foods LLP',contact:'Ms. Neha Shah',email:'neha.shah@amrutfoods.example',sp:'Priya Desai',items:[['PB-PIZZA-10',2000],['TP-BOPP-48',50]],sent:-6,valid:9,status:'Open',fu:1},
+    {id:'PP-Q-1043',company:'Kalpana Cosmetics',contact:'Mr. Arjun Rao',email:'arjun.rao@kalpanacosmetics.example',sp:'Rohan Mehta',items:[['MB-DUP-M',5000],['LBL-PP-50',5000]],sent:-11,valid:4,status:'Won',fu:2},
+    {id:'PP-Q-1044',company:'Gujarat Agro Exports',contact:'Mr. Mahesh Joshi',email:'mahesh.joshi@gujaratagro.example',sp:'Priya Desai',items:[['CB-5PLY-L',600]],sent:-17,valid:-2,status:'Open',fu:3},
+    {id:'PP-Q-1045',company:'Navkar Electronics',contact:'Ms. Riya Jain',email:'',sp:'Rohan Mehta',items:[['CB-3PLY-S',1500]],sent:-4,valid:11,status:'Open',fu:0},
+    {id:'PP-Q-1046',company:'Sai Textiles',contact:'Mr. Dev Sharma',email:'dev.sharma@saitextiles.example',sp:'Priya Desai',items:[['CB-3PLY-M',800]],sent:-7,valid:8,status:'Open',fu:1},
+  ];
+  const audit=[], runLog=[];
+  const quotes=seed.map(o=>{
+    const q={id:o.id,company:o.company,contact:o.contact,email:o.email,sp:o.sp,items:o.items,status:o.status,fu:o.fu,
+      sentDate:addDays(today,o.sent),validUntil:addDays(today,o.valid),activity:[],drafts:[],inbox:null,lastDraft:null,lastReply:null,lastFollowUp:null,discountPct:null,revisedP:null};
+    q.activity.push({t:at(q.sentDate,10,30),kind:'info',text:o.email?`Quotation e-mailed to ${o.contact} (${inr(total(q))})`:`Quotation shared on WhatsApp (${inr(total(q))}). Customer e-mail not recorded.`});
+    [2,5,9].slice(0,o.fu).forEach((d,i)=>{const t=at(addDays(q.sentDate,d),9,15);q.activity.push({t,kind:'send',text:`Follow-up #${i+1} e-mailed`});q.lastFollowUp=addDays(q.sentDate,d)});
+    return q;
+  });
+  const k=quotes[2]; const wonAt=at(addDays(k.sentDate,6),16,40);
+  k.activity.push({t:wonAt,kind:'won',text:'Customer sent PO. Status changed to Won by Rohan Mehta.'});
+  audit.push({t:wonAt,by:'Rohan Mehta (Salesperson)',qid:k.id,field:'Status',from:'Open',to:'Won'});
+  const s=quotes[5]; const rAt=at(addDays(today,-1),17,5);
+  s.inbox={t:rAt,text:'Thank you for the quotation. Our purchase team will review it this week and revert.'};
+  s.activity.push({t:rAt,kind:'reply',text:'Customer e-mail received (not yet processed by the daily check).'});
+  runLog.push({t:new Date(),level:'info',msg:'Prototype loaded with 6 fictional quotations. Dates are relative to today.',qid:null});
+  return {
+    role:'rohan',view:'dashboard',sel:null,running:false,run:null,lastRun:null,
+    settings:{salesHeadEmail:'harsh.trivedi@printpropack.example',discountLimit:8,fuDays:[2,5,9],maxFu:3,autoSend:true,testMode:true},
+    quotes,approvals:[],aiLog:[],runLog,audit,
+    qFilter:'All',logTab:'ai',resetArm:false,
+    dv:{qid:'PP-Q-1041'},rv:{qid:'PP-Q-1041',text:'',result:null},
+  };
+}
+let S=initialState();
+const Q=id=>S.quotes.find(q=>q.id===id);
+
+/* ---------- Logging: every action lands in Run, Audit or AI log ---------- */
+const who=()=>{const p=PEOPLE[S.role];return `${p.name} (${p.role})`};
+const isHead=()=>S.role==='head';
+function logRun(level,msg,qid=null){S.runLog.unshift({t:new Date(),level,msg,qid})}
+function logAudit(qid,field,from,to,by){S.audit.unshift({t:new Date(),by:by||who(),qid,field,from,to})}
+function logAI(qid,task,result,reasons,source){S.aiLog.unshift({t:new Date(),qid,task,result,reasons,source})}
+function act(q,text,kind='info'){q.activity.push({t:new Date(),text,kind})}
+const showVal=(f,v)=>v==null||v===''?'(empty)':v instanceof Date?fmtD(v):f==='revisedP'?inr(v):f==='discountPct'?v+'%':String(v);
+function setF(q,f,v,by){const old=q[f];if(old===v)return;q[f]=v;logAudit(q.id,FIELD[f]||f,showVal(f,old),showVal(f,v),by)}
+
+/* ---------- Rule engine ---------- */
+function missingFields(q){
+  const m=[];
+  if(!q.company)m.push('company'); if(!q.contact)m.push('contact name'); if(!q.email)m.push('customer e-mail');
+  if(!q.sp)m.push('salesperson'); if(!q.items||!q.items.length)m.push('line items'); if(!q.validUntil)m.push('validity date');
+  return m;
+}
+const schedDate=q=>{const d=S.settings.fuDays[q.fu];return d==null||q.fu>=S.settings.maxFu?null:addDays(q.sentDate,d)};
+// What the next daily check would do with this quote. Pure: no side effects.
+function planFor(q){
+  const st=S.settings, miss=missingFields(q);
+  if(miss.length) return {rule:'a',label:'Data Error – '+miss.join(', ')+' missing',tone:'red'};
+  if(['Won','Lost','Replied','Expired'].includes(q.status)) return {rule:'b',label:`Skip – ${q.status}`,tone:'grey'};
+  if(q.status==='Awaiting Approval') return {rule:'b',label:'Skip – paused for Sales Head',tone:'amber'};
+  if(today>q.validUntil) return {rule:'b',label:'Mark Expired',tone:'grey'};
+  if(q.fu>=st.maxFu) return {rule:'b',label:`Skip – ${q.fu} follow-ups sent`,tone:'grey'};
+  if(q.inbox) return {rule:'c',label:'Stop reminders – customer replied',tone:'blue'};
+  const s=schedDate(q);
+  if(!s||s>q.validUntil) return {rule:'d',label:'No follow-up left before validity',tone:'grey'};
+  if(s<=today) return {rule:'d',label:`Send follow-up #${q.fu+1}`,tone:'green',due:true};
+  return {rule:'d',label:`Not due – next ${fmtD(s)}`,tone:'grey'};
+}
+function nextFU(q){
+  if(q.status==='Awaiting Approval') return '<span class="muted">Paused</span>';
+  if(q.status==='Data Error'||missingFields(q).length) return '<span style="color:var(--red)">Blocked</span>';
+  if(q.status!=='Open') return '<span class="muted">Stopped</span>';
+  if(q.inbox) return '<span class="muted">Reply in inbox</span>';
+  if(today>q.validUntil) return '<span class="muted">Validity passed</span>';
+  if(q.fu>=S.settings.maxFu) return '<span class="muted">Max reached</span>';
+  const s=schedDate(q);
+  if(!s||s>q.validUntil) return '<span class="muted">None before validity</span>';
+  if(s<=today) return '<span class="due">Due today</span>';
+  return fmtD(s);
+}
+
+/* ---------- AI agent (simulated) ---------- */
+function buildPrompt(q,n){
+  const L=lines(q);
+  return `ROLE: Follow-up drafting assistant for PrintPro Packaging.
+TASK: Write follow-up e-mail #${n} of ${S.settings.maxFu} for the quotation below.
+RULES:
+- Use only the facts in DATA. Copy prices exactly as given.
+- Never offer or hint at a discount. Never write % figures.
+- Never change a price. Never extend the validity date.
+- Start with "Dear {{CONTACT}}," and keep {{COMPANY}} as written.
+DATA:
+quote_no: ${q.id}
+customer: {{COMPANY}}
+contact: {{CONTACT}}
+sent_on: ${fmtD(q.sentDate)}
+valid_until: ${fmtD(q.validUntil)}
+items:
+${L.map(l=>`  - ${l.code} | ${l.desc} | qty ${qty(l.n)} | rate ${rate(l.p)} | amount ${inr(l.amt)}`).join('\n')}
+total: ${inr(total(q))}
+signed_by: ${q.sp}`;
+}
+function aiDraft(q,n){
+  const L=lines(q), sent=fmtD(q.sentDate), valid=fmtD(q.validUntil);
+  const subject=n===1?`Follow-up: Quotation ${q.id} – ${L.map(l=>l.desc).join(' & ')}`
+    :n===2?`Quotation ${q.id} – checking in`:`Final reminder: Quotation ${q.id}`;
+  const open=n===1?`I hope you are doing well. I am writing to follow up on our quotation ${q.id}, sent to {{COMPANY}} on ${sent}.`
+    :n===2?`I wanted to check whether you have had a chance to review our quotation ${q.id} dated ${sent}.`
+    :`This is a final reminder about our quotation ${q.id} dated ${sent}.`;
+  const items=L.map(l=>`• ${qty(l.n)} × ${l.desc} (${l.code}) @ ${rate(l.p)} = ${inr(l.amt)}`).join('\n');
+  const body=`Dear {{CONTACT}},
+
+${open}
+
+${items}
+Quotation total: ${inr(total(q))}
+
+This quotation is valid until ${valid}. Please let me know if you have any questions, or reply to this e-mail to confirm the order.
+
+Warm regards,
+${q.sp}
+PrintPro Packaging, Ahmedabad`;
+  return {n,subject,body,prompt:buildPrompt(q,n)};
+}
+function fixedTemplate(q){
+  return {subject:`Quotation ${q.id} – reminder`,body:`Dear {{CONTACT}},
+
+This is a gentle reminder about our quotation ${q.id} dated ${fmtD(q.sentDate)}, for a total of ${inr(total(q))}. The quotation is valid until ${fmtD(q.validUntil)}.
+
+Please let us know if you need any clarification.
+
+Regards,
+${q.sp}
+PrintPro Packaging, Ahmedabad`};
+}
+const unmask=(s,q)=>s.split('{{CONTACT}}').join(q.contact).split('{{COMPANY}}').join(q.company);
+const BAD_LINE='As a special case, we can offer you a 15% discount, new total ₹22,865.';
+
+/* ---------- Guardrail ---------- */
+const PROMISE=[
+  /\b(?:can|could|will|would|happy to|able to|pleased to)\s+(?:offer|give|provide|extend|allow)\b[^.\n]{0,40}?\bdiscount\b/i,
+  /\bdiscount\b[^.\n]{0,25}?\b(?:approved|sanctioned|confirmed|available|possible)\b/i,
+  /\b(?:special|reduced|discounted|lower)\s+(?:price|rate)\b/i,
+  /\bnew total\b/i,
+];
+const EXTEND=[
+  /\bextend\w*\b[^.\n]{0,40}?\b(?:valid\w*|offer|quot\w*|deadline)\b/i,
+  /\b(?:valid\w*|offer|quot\w*)\b[^.\n]{0,40}?\bextend\w*/i,
+  /\b(?:valid|open)\s+for\s+(?:another|a further|one more|an extra)\b/i,
+];
+function guardrail(q,subject,body){
+  const text=subject+'\n'+body, L=lines(q);
+  const allowed=new Set([...L.map(l=>l.p),...L.map(l=>l.amt),total(q)]);
+  const amts=[...text.matchAll(/₹\s?(\d[\d,]*(?:\.\d+)?)/g)].map(m=>({raw:m[0].replace(/\s/g,''),p:Math.round(parseFloat(m[1].replace(/,/g,''))*100)}));
+  const badA=amts.filter(a=>!allowed.has(a.p));
+  const pcts=[...text.matchAll(/\d+(?:\.\d+)?\s?(?:%|percent\b|per cent\b)/gi)].map(m=>m[0]);
+  const prom=PROMISE.map(r=>text.match(r)).filter(Boolean).map(m=>m[0]);
+  const validStr=fmtD(q.validUntil), hasQ=text.includes(q.id), hasV=text.includes(validStr);
+  const dates=[...text.matchAll(/\b(\d{1,2}) (Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec)\w* (\d{4})\b/g)]
+    .map(m=>({raw:m[0],d:new Date(+m[3],MON.indexOf(m[2]),+m[1])})).filter(x=>x.d>q.validUntil);
+  const ext=EXTEND.map(r=>text.match(r)).filter(Boolean).map(m=>m[0]);
+  const greet=/^\s*Dear \{\{CONTACT\}\},/.test(body);
+  const leak=[q.contact.replace(/^(Mr|Ms|Mrs|Dr)\.?\s*/,''),q.company].filter(x=>x&&body.includes(x));
+  return [
+    {label:'Every ₹ amount exists in this quotation',pass:!badA.length,detail:badA.length?`Not in ${q.id}: ${badA.map(a=>a.raw).join(', ')}`:`${amts.length} amounts matched the price sheet`},
+    {label:'No percentage figures',pass:!pcts.length,detail:pcts.length?`Found ${pcts.join(', ')}`:'None found'},
+    {label:'No discount promise',pass:!prom.length,detail:prom.length?`Found “${prom[0]}”`:'None found'},
+    {label:'Quote number and validity date present',pass:hasQ&&hasV,detail:hasQ&&hasV?`${q.id} · valid until ${validStr}`:[!hasQ&&`${q.id} missing`,!hasV&&`validity date ${validStr} missing`].filter(Boolean).join(' · ')},
+    {label:'Validity not extended',pass:!ext.length&&!dates.length,detail:ext.length?`Found “${ext[0]}”`:dates.length?`Mentions ${dates[0].raw}, after validity`:'No extension wording or later date'},
+    {label:'Greeting placeholder intact',pass:greet&&!leak.length,detail:!greet?'Body must start with “Dear {{CONTACT}},”':leak.length?`Real name leaked: ${leak.join(', ')}`:'Starts with “Dear {{CONTACT}},”'},
+  ];
+}
+// Logs the result; if blocked, swaps in the fixed template and saves it as "Draft for human".
+function recordDraft(q,dr,checks,source){
+  const fails=checks.filter(c=>!c.pass), pass=!fails.length;
+  logAI(q.id,`Draft follow-up #${dr.n}`,pass?'PASS':'BLOCKED',pass?[`All ${checks.length} guardrail checks passed`]:fails.map(f=>`${f.label} – ${f.detail}`),source);
+  q.lastDraft={...dr,checks,pass,source,t:new Date()};
+  if(pass) return {pass,fails};
+  const fb=fixedTemplate(q);
+  q.drafts.unshift({id:uid(),kind:'Draft for human',subject:unmask(fb.subject,q),body:unmask(fb.body,q),t:new Date(),status:'Waiting for salesperson',
+    note:`AI draft blocked by the guardrail (${fails.length} reason${fails.length>1?'s':''}). Fixed template used instead.`});
+  act(q,`AI draft BLOCKED (${fails.length} reason${fails.length>1?'s':''}). Fixed template saved as Draft for human.`,'bad');
+  logRun('error',`${q.id}: AI draft blocked – ${fails.map(f=>f.label).join('; ')}. Fixed template saved as Draft for human.`,q.id);
+  logAudit(q.id,'Draft','(none)','Draft for human (fixed template)','Workflow · guardrail');
+  return {pass,fails};
+}
+
+/* ---------- Reply classification ---------- */
+const TAXW=/^(gst|igst|cgst|sgst|tax|taxes|tds|vat|cess|advance|payment|interest|freight)$/i;
+const DISC=/\b(discount|disc|less|reduce|reduction|lower|best (?:rate|price)|kam|concession|negotiate|cheaper|rebate)\b/i;
+function classify(text,limit){
+  const found=[],ignored=[];const re=/(\d+(?:\.\d+)?)\s*(?:%|percent\b|per\s?cent\b)/gi;let m;
+  while((m=re.exec(text))){
+    const clean=w=>(w||'').replace(/[^a-z]/gi,'');
+    const after=clean(text.slice(m.index+m[0].length).trim().split(/\s+/)[0]);
+    const before=text.slice(0,m.index).trim().split(/\s+/).slice(-2).map(clean);
+    const tw=[after,...before].find(w=>TAXW.test(w));
+    if(tw) ignored.push({pct:parseFloat(m[1]),word:tw.toUpperCase()}); else found.push(parseFloat(m[1]));
+  }
+  const word=(text.match(DISC)||[])[0];
+  const isDiscount=!!word||found.length>0, pct=found.length?Math.max(...found):null;
+  const reasons=[];
+  if(word) reasons.push(`Discount wording found: “${word}”`);
+  if(pct!=null) reasons.push(`Requested ${pct}% (salesperson limit ${limit}%)`);
+  ignored.forEach(i=>reasons.push(`Ignored ${i.pct}% – next to ${i.word}, not a discount`));
+  let kind,label;
+  if(isDiscount&&pct!=null&&pct>limit){kind='above';label='Discount request above limit'}
+  else if(isDiscount&&pct!=null){kind='within';label='Discount request within limit'}
+  else if(isDiscount){kind='nopct';label='Discount request – no % stated';reasons.push('No % given, so it goes to the Sales Head to be safe')}
+  else{kind='other';label=/\b(po|purchase order|confirm|order|proceed|go ahead)\b/i.test(text)?'Order intent':/\?/.test(text)?'Question':'General reply';if(!reasons.length)reasons.push('No discount wording or % found')}
+  return {kind,label,isDiscount,pct,ignored,reasons};
+}
+function processReply(q,text,source){
+  const limit=S.settings.discountLimit, c=classify(text,limit), before=q.status, closed=['Won','Lost','Expired'].includes(q.status);
+  q.inbox=null; q.lastReply={text,t:new Date()};
+  act(q,`Customer replied: “${text}”`,'reply');
+  logAI(q.id,'Classify reply',c.label,c.reasons,source);
+  let route, paused=false, approvalId=null;
+  if(closed){route=`${q.sp} (quote already ${q.status}, logged only)`}
+  else if(c.kind==='above'||c.kind==='nopct'){
+    route=c.kind==='above'?'Sales Head approval':'Sales Head approval (safe side)';paused=true;
+    setF(q,'status','Awaiting Approval','Workflow · reply rule');
+    S.approvals.filter(a=>a.qid===q.id&&a.status==='Pending').forEach(a=>{a.status='Superseded'});
+    const a={id:'APR-'+String(S.approvals.length+1).padStart(3,'0'),qid:q.id,text,pct:c.pct,totalP:total(q),t:new Date(),status:'Pending'};
+    S.approvals.unshift(a); approvalId=a.id;
+    act(q,`Sent to Sales Head (${a.id}). Follow-ups paused. No reply to customer.`,'wait');
+    logRun('warn',`${q.id}: discount request ${c.pct!=null?c.pct+'%':'(no % stated)'} → ${a.id} for Sales Head. Quote paused, bot does not reply.`,q.id);
+  }else{
+    setF(q,'status','Replied','Workflow · reply rule');
+    if(c.kind==='within'){route=`Salesperson – ${q.sp}`;act(q,`Handed to ${q.sp}: ${c.pct}% is within the ${limit}% salesperson limit. Bot does not reply.`,'wait')}
+    else{route=`Salesperson – ${q.sp}`;act(q,`Reminders stopped. ${q.sp} to respond personally.`,'info')}
+    logRun('info',`${q.id}: customer replied (${c.label}) → reminders stopped, routed to ${q.sp}.`,q.id);
+  }
+  return {...c,route,paused,before,after:q.status,approvalId,qid:q.id,text,source};
+}
+
+/* ---------- Daily check ---------- */
+async function say(kind,text){
+  S.run.lines.push({kind,text});
+  if(S.view==='check') renderView();
+  await sleep(S.run.fast?0:330);
+}
+function done(q,label,tone){S.run.out[q.id]={label,tone}}
+async function runCheck(){
+  if(S.running) return;
+  S.running=true; S.run={lines:[],out:{},cur:null,done:false,fast:false};
+  S.view='check'; S.sel=null; render();
+  logRun('info',`Daily check started by ${who()}`);
+  const st=S.settings;
+  for(const q of S.quotes){
+    S.run.cur=q.id;
+    await say('head',`${q.id} · ${q.company}`);
+    const miss=missingFields(q);
+    if(miss.length){
+      await say('bad',`a. Missing required field: ${miss.join(', ')}`);
+      setF(q,'status','Data Error','Workflow · rule a');
+      act(q,`Daily check: ${miss.join(', ')} missing. Alert sent to ${q.sp}. Nothing sent.`,'bad');
+      logRun('error',`${q.id}: ${miss.join(', ')} missing → Data Error. Alert sent to ${q.sp}. Nothing sent.`,q.id);
+      await say('bad',`Status → Data Error · alert sent to ${q.sp} · nothing sent`);
+      done(q,'Data Error','red'); continue;
+    }
+    if(q.status==='Data Error'){setF(q,'status','Open','Workflow · rule a');await say('ok','a. Data now complete → status back to Open')}
+    else await say('ok','a. Required fields complete');
+    if(['Won','Lost','Replied','Expired'].includes(q.status)){
+      await say('skip',`b. Status is ${q.status} → skip, no reminder`);
+      logRun('info',`${q.id}: status ${q.status} → skipped.`,q.id);
+      done(q,`Skipped · ${q.status}`,'grey'); continue;
+    }
+    if(q.status==='Awaiting Approval'){
+      await say('skip','b. Paused – waiting for Sales Head decision → skip');
+      logRun('info',`${q.id}: paused for Sales Head → skipped.`,q.id);
+      done(q,'Paused','amber'); continue;
+    }
+    if(today>q.validUntil){
+      await say('skip',`b. Validity ended ${fmtD(q.validUntil)} → mark Expired, skip`);
+      setF(q,'status','Expired','Workflow · rule b');
+      act(q,'Validity passed. Marked Expired by the daily check; reminders stopped.','info');
+      logRun('warn',`${q.id}: validity ended ${fmtD(q.validUntil)} → Expired.`,q.id);
+      done(q,'Expired','grey'); continue;
+    }
+    if(q.fu>=st.maxFu){
+      await say('skip',`b. ${q.fu} of ${st.maxFu} follow-ups already sent → skip`);
+      logRun('info',`${q.id}: maximum follow-ups reached → skipped.`,q.id);
+      done(q,'Skipped · max follow-ups','grey'); continue;
+    }
+    await say('ok',`b. Open · valid until ${fmtD(q.validUntil)} · ${q.fu} of ${st.maxFu} follow-ups sent`);
+    if(q.inbox){
+      await say('warn',`c. Customer replied on ${fmtD(q.inbox.t)} → reminders stopped`);
+      await say('ai','AI agent classifying the reply (classify only, no reply sent)…');
+      const r=processReply(q,q.inbox.text,'Daily check');
+      await say(r.paused?'warn':'ok',`Discount request: ${r.isDiscount?(r.pct!=null?r.pct+'%':'yes, no % stated'):'none'} → ${r.route}`);
+      await say('skip',`Status → ${q.status}`);
+      done(q,r.paused?'Paused for Sales Head':'Skipped · customer replied',r.paused?'amber':'grey'); continue;
+    }
+    await say('ok','c. No reply from customer');
+    const s=schedDate(q), since=daysBetween(q.sentDate,today);
+    if(!s||s>q.validUntil){
+      await say('skip','d. Next follow-up would fall after validity → none');
+      logRun('info',`${q.id}: no follow-up left before validity.`,q.id);
+      done(q,'No action','grey'); continue;
+    }
+    if(s>today){
+      await say('skip',`d. Day ${since} since sending · next follow-up ${fmtD(s)} → nothing due`);
+      logRun('info',`${q.id}: not due (next ${fmtD(s)}).`,q.id);
+      done(q,'Not due today','grey'); continue;
+    }
+    const n=q.fu+1;
+    await say('ok',`d. Day ${since} since sending · follow-up #${n} due (Day ${st.fuDays[q.fu]} rule)`);
+    await say('ai','AI agent drafting e-mail from masked data ({{CONTACT}}, {{COMPANY}})…');
+    const dr=aiDraft(q,n), checks=guardrail(q,dr.subject,dr.body), res=recordDraft(q,dr,checks,'Daily check');
+    if(!res.pass){
+      await say('bad',`Guardrail BLOCKED (${res.fails.length}) → fixed template saved as Draft for human`);
+      done(q,'Draft for human','red'); continue;
+    }
+    await say('ok',`Guardrail PASS · ${checks.length}/${checks.length} checks`);
+    if(st.autoSend){
+      setF(q,'fu',n,'Workflow · rule d'); setF(q,'lastFollowUp',today,'Workflow · rule d');
+      act(q,`Follow-up #${n} e-mailed to ${q.email}${st.testMode?' (test mode)':''}. Guardrail PASS.`,'send');
+      logRun('success',`${q.id}: follow-up #${n} sent to ${q.email}${st.testMode?' (test mode – simulated)':''}.`,q.id);
+      await say('send',`✉ Sent to ${q.email}${st.testMode?' (test mode – simulated)':''}`);
+      done(q,`Follow-up #${n} sent`,'green');
+    }else{
+      const fin=unmask(dr.body,q);
+      q.drafts.unshift({id:uid(),kind:'Follow-up ready to send',fuNo:n,subject:unmask(dr.subject,q),body:fin,t:new Date(),status:'Waiting for salesperson',note:'Auto-send is off. Guardrail passed; salesperson sends it.'});
+      act(q,`Follow-up #${n} drafted (guardrail PASS). Auto-send off, waiting for ${q.sp}.`,'wait');
+      logRun('info',`${q.id}: follow-up #${n} ready for ${q.sp} (auto-send off).`,q.id);
+      await say('warn','Auto-send is off → saved for the salesperson to send');
+      done(q,'Ready for salesperson','amber');
+    }
+  }
+  const o=Object.values(S.run.out), c=t=>o.filter(x=>x.label.startsWith(t)).length;
+  S.run.summary={sent:o.filter(x=>/sent$/.test(x.label)).length,skipped:c('Skipped'),expired:c('Expired'),errors:c('Data Error'),paused:o.filter(x=>/Paused/.test(x.label)).length,other:c('Not due')+c('No action')+c('Ready')+c('Draft for human')};
+  const sm=S.run.summary;
+  S.run.lines.push({kind:'sum',text:`Done · ${sm.sent} follow-ups sent · ${sm.skipped} skipped · ${sm.expired} expired · ${sm.errors} data error${sm.errors===1?'':'s'}${sm.paused?` · ${sm.paused} paused`:''}`});
+  logRun('success',`Daily check finished: ${sm.sent} sent, ${sm.skipped} skipped, ${sm.expired} expired, ${sm.errors} data errors.`);
+  S.run.cur=null; S.run.done=true; S.running=false; S.lastRun=new Date();
+  render(); toast(`Daily check finished · ${sm.sent} follow-ups sent`,'ok');
+}
+
+/* ---------- Views ---------- */
+const chip=s=>`<span class="chip ${SCLS[s]||'t-grey'}">${esc(s)}</span>`;
+const toneChip=(t,l)=>`<span class="chip t-${t}">${esc(l)}</span>`;
+function kpis(){
+  return {
+    open:S.quotes.filter(q=>q.status==='Open').length,
+    due:S.quotes.filter(q=>planFor(q).due).length,
+    wait:S.approvals.filter(a=>a.status==='Pending').length,
+    err:S.quotes.filter(q=>(missingFields(q).length||q.status==='Data Error')&&!['Won','Lost'].includes(q.status)).length,
+  };
+}
+const VIEWS={};
+VIEWS.dashboard=()=>{
+  const k=kpis();
+  const plan=S.quotes.map(q=>{const p=planFor(q);return `<tr class="click" data-open="${q.id}"><td><span class="mono">${q.id}</span><div class="sm">${esc(q.company)}</div></td><td><span class="rule">${p.rule}</span></td><td>${toneChip(p.tone,p.label)}</td></tr>`}).join('');
+  const recent=S.runLog.slice(0,6).map(r=>`<li class="${r.level==='error'?'bad':r.level==='success'?'send':r.level==='warn'?'wait':''}">${esc(r.msg)}<small>${fmtDT(r.t)}</small></li>`).join('');
+  return `
+  <div class="page-h"><div><h2>Dashboard</h2><p>Quotes that need a follow-up, approvals waiting and data problems, as of ${fmtD(today)}.</p></div></div>
+  <div class="grid kpis">
+    <div class="card kpi"><span class="lbl">Open quotes</span><span class="n">${k.open}</span><span class="sub">Reminders still running</span></div>
+    <div class="card kpi"><span class="lbl">Follow-ups due today</span><span class="n kraft">${k.due}</span><span class="sub">Day ${S.settings.fuDays.join(', ')} rule</span></div>
+    <div class="card kpi"><span class="lbl">Awaiting approval</span><span class="n ${k.wait?'amber':''}">${k.wait}</span><span class="sub">Discounts above ${S.settings.discountLimit}%</span></div>
+    <div class="card kpi"><span class="lbl">Errors</span><span class="n ${k.err?'red':''}">${k.err}</span><span class="sub">Missing required data</span></div>
+  </div>
+  <div class="grid dash2" style="margin-top:16px">
+    <div class="card runhero">
+      <h3>Today's run</h3>
+      <div class="row"><button class="btn primary big" data-act="run" ${S.running?'disabled':''}>▶ Run daily check</button>
+        <span class="muted">${S.lastRun?`Last run ${fmtDT(S.lastRun)}`:'Not run yet today'}</span></div>
+      <p>The check walks every quote through four rules in order: missing data, closed or expired, customer replied, follow-up due. Here is what it will do next:</p>
+      <div class="tbl-wrap"><table><thead><tr><th>Quote</th><th>Rule</th><th>Next action</th></tr></thead><tbody>${plan}</tbody></table></div>
+    </div>
+    <div class="stack">
+      <div class="card why">
+        <h3>Why we built this</h3>
+        <dl>
+          <div><dt>Quotes sent per week</dt><dd class="big">80</dd></div>
+          <div><dt>Cost of the manual process per week</dt><dd class="big">₹71,000</dd>
+            <div class="bar" role="img" aria-label="₹7,000 staff time and ₹64,000 errors"><span style="width:9.9%;background:var(--navy)"></span><span style="width:90.1%;background:var(--red)"></span></div>
+            <div class="legend"><span><i style="background:var(--navy)"></i>Staff time ₹7,000</span><span><i style="background:var(--red)"></i>Errors and lost quotes ₹64,000</span></div></div>
+          <div><dt>Waiting time per quote: Step 3 “remember to follow up”</dt><dd class="big">96 <span style="font-size:18px" class="muted">of 162 hours</span></dd>
+            <div class="bar" role="img" aria-label="96 of 162 waiting hours"><span style="width:59.3%;background:var(--kraft)"></span></div>
+            <div class="legend"><span><i style="background:var(--kraft)"></i>59% of all waiting is someone remembering to follow up</span></div></div>
+        </dl>
+      </div>
+      <div class="card"><h3>Recent activity</h3><ul class="tl">${recent}</ul><button class="link" data-go="logs">Open all logs</button></div>
+    </div>
+  </div>`;
+};
+VIEWS.quotes=()=>{
+  const counts=Object.fromEntries(STATUSES.map(s=>[s,S.quotes.filter(q=>q.status===s).length]));
+  const list=S.quotes.filter(q=>S.qFilter==='All'||q.status===S.qFilter);
+  const rows=list.map(q=>`<tr class="click" data-open="${q.id}">
+    <td><span class="mono">${q.id}</span></td>
+    <td><div class="co">${esc(q.company)}</div><div class="sm">${esc(q.contact)}${q.email?'':' · <span style="color:var(--red)">no e-mail</span>'}</div></td>
+    <td>${esc(q.sp)}</td><td class="num">${inr(total(q))}</td>
+    <td>${fmtD(q.sentDate)}</td><td>${fmtD(q.validUntil)}</td><td>${chip(q.status)}</td>
+    <td class="num">${q.fu} / ${S.settings.maxFu}</td><td>${nextFU(q)}</td></tr>`).join('');
+  return `
+  <div class="page-h"><div><h2>Quotes</h2><p>Click a row to see line items, drafts and the activity timeline. Totals are calculated from the price list.</p></div></div>
+  <div class="filters">${['All',...STATUSES].map(s=>`<button class="fbtn ${S.qFilter===s?'on':''}" data-filter="${s}">${s} ${s==='All'?S.quotes.length:counts[s]}</button>`).join('')}</div>
+  <div class="card"><div class="tbl-wrap"><table style="min-width:880px">
+    <thead><tr><th>Quote</th><th>Customer</th><th>Salesperson</th><th class="num">Total</th><th>Sent</th><th>Valid until</th><th>Status</th><th class="num">Follow-ups</th><th>Next follow-up</th></tr></thead>
+    <tbody>${rows||`<tr><td colspan="9" class="empty">No quotes with status ${esc(S.qFilter)}.</td></tr>`}</tbody></table></div></div>`;
+};
+VIEWS.check=()=>{
+  const r=S.run;
+  const board=S.quotes.map(q=>{
+    const o=r&&r.out[q.id], cur=r&&r.cur===q.id;
+    const right=o?toneChip(o.tone,o.label):cur?'<span class="muted">checking…</span>':r&&!r.done?'<span class="muted">waiting</span>':`<span class="muted">Next: rule ${planFor(q).rule}</span>`;
+    return `<li class="brow ${cur?'cur':''}"><span class="mono">${q.id}</span><span class="bco">${esc(q.company)}</span>${right}</li>`;
+  }).join('');
+  const icon={ok:'✓',bad:'✕',skip:'→',ai:'◆',warn:'!',send:'',head:'▸',sum:'■'};
+  const con=r?r.lines.map(l=>`<div class="ln k-${l.kind}"><span class="ic">${icon[l.kind]}</span><span>${esc(l.text)}</span></div>`).join('')
+    :'<div class="ph-note">Press “Run daily check”. Each quote goes through rules a → d in order, and every step is written here and to the Run Log.</div>';
+  const sm=r&&r.summary;
+  return `
+  <div class="page-h"><div><h2>Run daily check</h2><p>Simulates the scheduled workflow. Rules are applied to each quote in order; the first rule that matches decides what happens.</p></div>
+    <div class="acts">${S.running?'<button class="btn" data-act="fast">Skip animation</button>':''}<button class="btn primary" data-act="run" ${S.running?'disabled':''}>▶ ${r&&r.done?'Run again':'Run daily check'}</button></div></div>
+  <div class="card" style="margin-bottom:16px"><div class="rules">
+    <div><span class="rule">a</span><span><b>Missing required field</b><br><span class="muted">Data Error, alert salesperson, nothing sent</span></span></div>
+    <div><span class="rule">b</span><span><b>Won, Lost, Replied, Expired or ${S.settings.maxFu} sent</b><br><span class="muted">Skip. Validity passed → mark Expired</span></span></div>
+    <div><span class="rule">c</span><span><b>Customer replied</b><br><span class="muted">Stop reminders, check for a discount request</span></span></div>
+    <div><span class="rule">d</span><span><b>Follow-up due</b><br><span class="muted">Day ${S.settings.fuDays.join(', ')} · AI draft → guardrail → send</span></span></div>
+  </div></div>
+  ${sm?`<div class="card" style="margin-bottom:16px"><h3>Result of this run</h3><div class="summary">
+    <div><b style="color:var(--green)">${sm.sent}</b>follow-ups sent</div><div><b>${sm.skipped}</b>skipped</div><div><b>${sm.expired}</b>marked Expired</div>
+    <div><b style="color:var(--red)">${sm.errors}</b>data errors</div>${sm.paused?`<div><b style="color:var(--amber)">${sm.paused}</b>paused</div>`:''}${sm.other?`<div><b>${sm.other}</b>no send today</div>`:''}</div>
+    <div class="row" style="margin-top:12px"><button class="btn sm" data-go="draft">See the AI drafts</button><button class="btn sm" data-go="quotes">Open quotes</button><button class="btn sm" data-go="logs">Open logs</button></div></div>`:''}
+  <div class="grid check2">
+    <div class="card"><h3>Quotes</h3><ul class="board">${board}</ul></div>
+    <div class="card" style="padding:0;border:0;background:none"><div class="console" id="console">${con}</div></div>
+  </div>`;
+};
+VIEWS.draft=()=>{
+  const d=S.dv, q=Q(d.qid);
+  if(!d.body) loadDraft(d.qid,false);
+  const dd=S.dv, checks=dd.checks, fails=checks.filter(c=>!c.pass);
+  const prompt=esc(dd.prompt).replace(/\{\{(CONTACT|COMPANY)\}\}/g,'<span class="ph">{{$1}}</span>');
+  const closedNote=['Won','Lost','Expired','Replied','Awaiting Approval'].includes(q.status)||missingFields(q).length
+    ?`<div class="banner amber" style="margin-bottom:14px"><span>!</span><span>${q.id} is <b>${esc(q.status)}</b>${missingFields(q).length?' and has missing data':''}. The daily check would not send a follow-up for it; this is a preview only.</span></div>`:'';
+  let verdict;
+  if(dd.verdict==='blocked') verdict=`<div class="verdict fail"><strong>BLOCKED · ${fails.length} reason${fails.length>1?'s':''}</strong>The AI draft was discarded. A fixed template was saved on ${q.id} as “Draft for human”.</div>`;
+  else if(dd.verdict==='pass') verdict=`<div class="verdict pass"><strong>PASS · ${checks.length}/${checks.length}</strong>${dd.origin==='Daily check'?'This draft was sent by the daily check.':'In the daily check this e-mail would be sent. Nothing is sent from this screen.'}</div>`;
+  else verdict=`<div class="verdict pre"><strong style="color:var(--ink)">Not checked yet</strong>Edit the draft if you like, then press “Run guardrail”.</div>`;
+  const opts=S.quotes.map(x=>`<option value="${x.id}" ${x.id===dd.qid?'selected':''}>${x.id} · ${esc(x.company)}</option>`).join('');
+  const fb=fixedTemplate(q);
+  const finalView=dd.verdict==='blocked'
+    ?`<div class="row" style="margin-bottom:10px"><span class="tag red">AI draft blocked</span><span class="tag amber">Saved as Draft for human</span></div>
+      <div class="mailview"><div class="mh"><span><b>To:</b> ${esc(q.email||'(missing)')}</span><span><b>Subject:</b> ${esc(unmask(fb.subject,q))}</span></div><pre>${esc(unmask(fb.body,q))}</pre></div>`
+    :`<div class="row" style="margin-bottom:10px"><span class="tag ${dd.verdict==='pass'?'green':'navy'}">${dd.verdict==='pass'?'Guardrail passed':'Preview'}</span><span class="muted">Placeholders are filled in by code after the guardrail.</span></div>
+      <div class="mailview"><div class="mh"><span><b>To:</b> ${esc(q.email||'(missing)')}</span><span><b>Subject:</b> ${esc(unmask(dd.subject,q))}</span></div><pre>${esc(unmask(dd.body,q))}</pre></div>`;
+  return `
+  <div class="page-h"><div><h2>AI draft preview</h2><p>The AI only sees masked data and only drafts. Code checks every draft before anything leaves PrintPro.</p></div>
+    <div class="acts"><button class="btn" data-act="gen">Generate AI draft</button><button class="btn danger" data-act="bad">Try a bad draft</button></div></div>
+  <div class="card" style="margin-bottom:16px"><div class="row">
+    <div class="field" style="margin:0;flex:1;min-width:220px"><label for="dv-q">Quotation</label><select id="dv-q">${opts}</select></div>
+    <div class="muted" style="font-size:13.5px">Showing: <b>${esc(dd.origin)}</b> · follow-up #${dd.n}${q.lastDraft&&dd.origin!=='Preview'?` · ${fmtDT(q.lastDraft.t)}`:''}</div>
+  </div></div>
+  ${closedNote}
+  <div class="grid draft3">
+    <div class="card"><div class="step"><b>1</b>Masked prompt</div><pre class="prompt">${prompt}</pre>
+      <p class="muted" style="font-size:12.5px;margin:10px 0 0">Customer name, company and e-mail never reach the AI.</p></div>
+    <div class="card"><div class="step"><b>2</b>Generated e-mail</div>
+      <div class="field"><label for="dv-subj">Subject</label><input id="dv-subj" value="${esc(dd.subject)}"></div>
+      <div class="field" style="margin-bottom:10px"><label for="dv-body">Body (edit it to test the guardrail)</label><textarea id="dv-body" class="mail">${esc(dd.body)}</textarea></div>
+      <button class="btn navy" data-act="check">Run guardrail</button></div>
+    <div class="card"><div class="step"><b>3</b>Guardrail</div>
+      <ul class="checks">${checks.map(c=>`<li class="${dd.verdict?c.pass?'pass':'fail':''}" style="${dd.verdict?'':'background:var(--soft)'}"><span class="ci" style="${dd.verdict?'':'background:#9AA8B5'}">${dd.verdict?(c.pass?'✓':'✕'):'·'}</span><span>${esc(c.label)}${dd.verdict?`<small>${esc(c.detail)}</small>`:''}</span></li>`).join('')}</ul>
+      ${verdict}</div>
+  </div>
+  <div class="card" style="margin-top:16px"><h3>${dd.verdict==='blocked'?'Replacement saved for the salesperson':'What the customer receives'}</h3>${finalView}</div>`;
+};
+function loadDraft(qid,fresh){
+  const q=Q(qid), n=Math.min(q.fu+1,S.settings.maxFu);
+  if(!fresh&&q.lastDraft){const l=q.lastDraft;S.dv={qid,n:l.n,subject:l.subject,body:l.body,prompt:l.prompt,checks:l.checks,verdict:l.pass?'pass':'blocked',origin:l.source};return}
+  const dr=aiDraft(q,n);
+  S.dv={qid,n,subject:dr.subject,body:dr.body,prompt:dr.prompt,checks:guardrail(q,dr.subject,dr.body),verdict:null,origin:'Preview'};
+}
+const PRESETS=[
+  ['15% ask','We will confirm the order only if you give us 15% discount'],
+  ['5% ask','Can you give 5% discount?'],
+  ['GST query','Prices are fine, is 18% GST extra?'],
+  ['No %','Best rate please, kuch kam karo'],
+  ['Order','Please send PO format, we will confirm'],
+];
+VIEWS.replies=()=>{
+  const v=S.rv, r=v.result;
+  const opts=S.quotes.map(x=>`<option value="${x.id}" ${x.id===v.qid?'selected':''}>${x.id} · ${esc(x.company)} (${esc(x.status)})</option>`).join('');
+  let res=`<div class="empty">Pick a quote, paste or choose a customer reply, then press “Classify reply”.<br>The result shows the detected discount, where the reply goes and the status change.</div>`;
+  if(r){
+    const q=Q(r.qid);
+    const banner=r.paused?`<div class="banner red"><span>⏸</span><span><b>Flow PAUSED.</b> Sent to the Sales Head as ${r.approvalId}. No reply goes to the customer until the Sales Head decides.</span></div>`
+      :r.kind==='within'?`<div class="banner amber"><span>→</span><span><b>Handed to ${esc(q.sp)}.</b> ${r.pct}% is within the ${S.settings.discountLimit}% salesperson limit. The bot does not reply.</span></div>`
+      :`<div class="banner green"><span>✓</span><span><b>Reminders stopped.</b> Not a discount request. ${esc(q.sp)} replies personally.</span></div>`;
+    res=`<div class="stack" style="gap:12px">
+      <blockquote class="msg">“${esc(r.text)}”</blockquote>
+      <div class="kv">
+        <div class="k">Detected discount</div><div><span class="bignum" style="color:${r.kind==='above'||r.kind==='nopct'?'var(--red)':r.kind==='within'?'var(--amber)':'var(--green)'}">${r.isDiscount?(r.pct!=null?r.pct+'%':'Yes · no %'):'None'}</span>
+          ${r.ignored.length?`<div class="muted" style="font-size:13px;margin-top:4px">Ignored: ${r.ignored.map(i=>`${i.pct}% (next to ${i.word})`).join(', ')}</div>`:''}</div>
+        <div class="k">AI classification</div><div>${esc(r.label)}</div>
+        <div class="k">Route</div><div><b>${esc(r.route)}</b></div>
+        <div class="k">Status change</div><div>${chip(r.before)}<span class="arrow">→</span>${chip(r.after)}</div>
+        <div class="k">Reminders</div><div>Stopped</div>
+        <div class="k">Bot reply to customer</div><div>None. The AI classifies only.</div>
+      </div>${banner}
+      <ul class="reasons" style="margin:0">${r.reasons.map(x=>`<li>${esc(x)}</li>`).join('')}</ul>
+      <div class="row">${r.paused?'<button class="btn sm" data-go="approvals">Open Approvals</button>':''}<button class="btn sm" data-open="${r.qid}">Open ${r.qid}</button></div></div>`;
+  }
+  return `
+  <div class="page-h"><div><h2>Customer reply simulator</h2><p>Red-team the reply rules. A % next to GST, tax, advance or payment is ignored. A discount above ${S.settings.discountLimit}%, or a discount request with no %, always goes to the Sales Head.</p></div></div>
+  <div class="grid reply2">
+    <div class="card">
+      <div class="field"><label for="rv-q">Reply is for quotation</label><select id="rv-q">${opts}</select></div>
+      <div class="field"><label for="rv-text">Customer reply</label><textarea id="rv-text" rows="4" placeholder="Paste the customer's e-mail here">${esc(v.text)}</textarea></div>
+      <button class="btn navy" data-act="classify">Classify reply</button>
+      <h3 style="margin-top:20px">Presets</h3>
+      <div class="presets">${PRESETS.map((p,i)=>`<button class="preset" data-preset="${i}"><span class="pk">${p[0]}</span><span>${esc(p[1])}</span></button>`).join('')}</div>
+    </div>
+    <div class="card"><h3>Result</h3>${res}</div>
+  </div>`;
+};
+VIEWS.approvals=()=>{
+  const pend=S.approvals.filter(a=>a.status==='Pending'), dec=S.approvals.filter(a=>a.status!=='Pending');
+  const gate=isHead()?'':`<div class="banner navy" style="margin-bottom:16px"><span>🔒</span><span>Only the Sales Head can approve, reject or counter. You are viewing as ${esc(who())}. <button class="link" data-act="ashead">Switch to Sales Head</button></span></div>`;
+  const card=a=>{
+    const q=Q(a.qid), def=a.pct!=null?a.pct:'';
+    const rev=def!==''?Math.round(a.totalP*(1-def/100)):null;
+    return `<div class="card appr">
+      <div><div class="row"><span class="stamp">${a.id}</span>${chip(q.status)}<span class="sp"></span><span class="muted" style="font-size:13px">${fmtDT(a.t)}</span></div>
+        <h4>${esc(q.company)} <span class="muted mono" style="font-weight:500">${q.id}</span></h4>
+        <div class="muted" style="font-size:13.5px;margin-bottom:10px">${esc(q.contact)} · salesperson ${esc(q.sp)}</div>
+        <blockquote class="msg">“${esc(a.text)}”</blockquote>
+        <div class="facts"><div><small>Requested</small><b>${a.pct!=null?a.pct+'%':'Not stated'}</b></div><div><small>Quote total</small><b>${inr(a.totalP)}</b></div><div><small>Valid until</small><b>${fmtD(q.validUntil)}</b></div></div></div>
+      <div class="stack" style="gap:12px">
+        <div><label class="muted" style="font-size:12.5px;font-weight:600" for="pct-${a.id}">Discount % to approve or counter</label>
+          <div class="pctin"><input id="pct-${a.id}" class="pct-in" data-aid="${a.id}" type="number" min="0.5" max="50" step="0.5" value="${def}" ${isHead()?'':'disabled'}><span>%</span></div></div>
+        <div class="calc">Revised total, calculated by code:<br><b id="rev-${a.id}">${rev!=null?inr(rev):'—'}</b>
+          <div class="eq" id="eq-${a.id}">${rev!=null?`${inr(a.totalP)} × (1 − ${def}/100)`:'Enter a % to calculate'}</div></div>
+        <div class="row"><button class="btn ok" data-dec="approve" data-aid="${a.id}" ${isHead()?'':'disabled'}>Approve</button>
+          <button class="btn" data-dec="counter" data-aid="${a.id}" ${isHead()?'':'disabled'}>Counter</button>
+          <button class="btn danger" data-dec="reject" data-aid="${a.id}" ${isHead()?'':'disabled'}>Reject</button></div>
+      </div></div>`;
+  };
+  const decided=dec.map(a=>{const q=Q(a.qid);return `<tr class="click" data-open="${q.id}"><td><span class="mono">${a.id}</span></td><td>${q.id}<div class="sm">${esc(q.company)}</div></td>
+    <td>${a.pct!=null?a.pct+'%':'—'}</td><td><span class="tag ${a.status==='Approved'?'green':a.status==='Rejected'?'red':a.status==='Countered'?'amber':'navy'}">${esc(a.status)}</span></td>
+    <td>${a.decidedPct!=null?a.decidedPct+'%':'—'}</td><td class="num">${a.revisedP!=null?inr(a.revisedP):'—'}</td><td>${a.by?esc(a.by):'—'}</td></tr>`}).join('');
+  return `
+  <div class="page-h"><div><h2>Approvals</h2><p>Sales Head view. Discount requests above ${S.settings.discountLimit}% (or with no % stated) wait here and the quote stays paused. The AI never sets or calculates a price.</p></div></div>
+  ${gate}
+  <div class="stack">${pend.length?pend.map(card).join(''):`<div class="card empty">No requests waiting.<br>Try the Reply simulator with the “15% ask” preset to create one.<div style="margin-top:12px"><button class="btn sm" data-go="replies">Open Reply simulator</button></div></div>`}</div>
+  ${dec.length?`<div class="card" style="margin-top:16px"><h3>Decided</h3><div class="tbl-wrap"><table style="min-width:680px"><thead><tr><th>Request</th><th>Quote</th><th>Asked</th><th>Decision</th><th>Given</th><th class="num">Revised total</th><th>By</th></tr></thead><tbody>${decided}</tbody></table></div>
+    <p class="muted" style="font-size:13px;margin:10px 0 0">Each decision created a reply draft on the quote for the salesperson to send. Click a row to open it.</p></div>`:''}`;
+};
+VIEWS.logs=()=>{
+  const t=S.logTab;
+  let body;
+  if(t==='ai') body=S.aiLog.length?`<table style="min-width:720px"><thead><tr><th>Time</th><th>Quote</th><th>Task</th><th>Result</th><th>Reasons</th><th>Source</th></tr></thead><tbody>${S.aiLog.map(l=>`<tr>
+    <td class="mono" style="white-space:nowrap">${fmtD(l.t)} ${fmtT(l.t)}</td><td class="mono">${l.qid}</td><td>${esc(l.task)}</td>
+    <td><span class="tag ${l.result==='PASS'?'green':l.result==='BLOCKED'?'red':'navy'}">${esc(l.result)}</span></td>
+    <td><ul class="reasons" style="margin:0">${l.reasons.map(r=>`<li>${esc(r)}</li>`).join('')}</ul></td><td>${esc(l.source)}</td></tr>`).join('')}</tbody></table>`
+    :'<div class="empty">No AI activity yet. Run the daily check, open AI draft, or classify a reply.</div>';
+  if(t==='run') body=`<table style="min-width:620px"><thead><tr><th>Time</th><th>Event</th><th>Quote</th></tr></thead><tbody>${S.runLog.map(l=>`<tr>
+    <td class="mono" style="white-space:nowrap">${fmtD(l.t)} ${fmtT(l.t)}</td><td><span class="lv ${l.level}"></span>${esc(l.msg)}</td><td class="mono">${l.qid||'—'}</td></tr>`).join('')}</tbody></table>`;
+  if(t==='audit') body=S.audit.length?`<table style="min-width:720px"><thead><tr><th>Time</th><th>Who</th><th>Quote</th><th>Field</th><th>Old → new</th></tr></thead><tbody>${S.audit.map(l=>`<tr>
+    <td class="mono" style="white-space:nowrap">${fmtD(l.t)} ${fmtT(l.t)}</td><td>${esc(l.by)}</td><td class="mono">${l.qid||'—'}</td><td>${esc(l.field)}</td>
+    <td><span class="old">${esc(l.from)}</span><span class="arrow">→</span><b>${esc(l.to)}</b></td></tr>`).join('')}</tbody></table>`:'<div class="empty">No changes yet.</div>';
+  return `
+  <div class="page-h"><div><h2>Logs</h2><p>Every action in the app writes here: AI drafts and guardrail results, workflow events, and every field change with who made it.</p></div></div>
+  <div class="card"><div class="ltabs">
+    <button class="ltab ${t==='ai'?'on':''}" data-ltab="ai">AI Log (${S.aiLog.length})</button>
+    <button class="ltab ${t==='run'?'on':''}" data-ltab="run">Run Log (${S.runLog.length})</button>
+    <button class="ltab ${t==='audit'?'on':''}" data-ltab="audit">Audit Log (${S.audit.length})</button></div>
+    <div class="tbl-wrap">${body}</div></div>`;
+};
+VIEWS.prefs=()=>{
+  const s=S.settings, dis=isHead()?'':'disabled';
+  const price=isHead()?`<div class="tbl-wrap"><table style="min-width:460px"><thead><tr><th>Code</th><th>Item</th><th>Unit</th><th class="num">Rate</th></tr></thead><tbody>${PRICE_LIST.map(p=>`<tr><td class="mono">${p.code}</td><td>${esc(p.desc)}</td><td>${p.unit}</td><td class="num">${rate(p.p)}</td></tr>`).join('')}</tbody></table></div>
+      <p class="muted" style="font-size:13px;margin:10px 0 0">Read-only. Quote totals, the guardrail and approval maths all read from this sheet; no screen can edit it.</p>`
+    :`<div class="lockbox"><b>🔒 Confidential – Sales Head only</b><br><span style="font-size:13.5px">Salespeople see prices only on their own quotations.</span><div style="margin-top:10px"><button class="btn sm" data-act="ashead">Switch to Sales Head</button></div></div>`;
+  return `
+  <div class="page-h"><div><h2>Settings</h2><p>${isHead()?'Changes are written to the Audit Log.':'Only the Sales Head can change settings. Switch role in the header to edit.'}</p></div></div>
+  <div class="grid set2">
+    <div class="card">
+      <h3>Workflow rules</h3>
+      <div class="field"><label for="set-email">Sales Head e-mail</label><input id="set-email" type="email" value="${esc(s.salesHeadEmail)}" ${dis}></div>
+      <div class="field"><label for="set-limit">Salesperson discount limit (%)</label><input id="set-limit" type="number" min="0" max="50" step="0.5" value="${s.discountLimit}" ${dis}></div>
+      <div class="field"><label for="set-days">Follow-up days after sending</label><input id="set-days" value="${s.fuDays.join(', ')}" ${dis}></div>
+      <div class="field"><label for="set-max">Maximum follow-ups</label><input id="set-max" type="number" min="1" max="5" value="${s.maxFu}" ${dis}></div>
+      <label class="toggle" for="set-auto"><span><b>Auto-send</b><br><span class="muted" style="font-size:13px">Off: drafts that pass the guardrail wait for the salesperson</span></span><input id="set-auto" type="checkbox" ${s.autoSend?'checked':''} ${dis}></label>
+      <label class="toggle" for="set-test"><span><b>Test mode</b><br><span class="muted" style="font-size:13px">On: e-mails are simulated, nothing leaves the app</span></span><input id="set-test" type="checkbox" ${s.testMode?'checked':''} ${dis}></label>
+      <div class="row" style="margin-top:14px"><button class="btn primary" data-act="save" ${dis}>Save settings</button>
+        <span class="sp"></span><button class="btn danger sm" data-act="reset">${S.resetArm?'Click again to reset everything':'Reset demo data'}</button></div>
+    </div>
+    <div class="stack">
+      <div class="card"><div class="conf"><h3 style="margin:0">Price list</h3><span class="tag red">Confidential – Sales Head only</span><span class="tag navy">Read-only</span></div>${price}</div>
+      <div class="card"><h3>What the AI agent may do</h3>
+        <div class="grid" style="grid-template-columns:repeat(auto-fit,minmax(180px,1fr))">
+          <div><b style="color:var(--green)">Can</b><ul class="can"><li>Draft follow-up e-mails</li><li>Classify customer replies</li></ul></div>
+          <div><b style="color:var(--red)">Can never</b><ul class="cannot"><li>Approve anything</li><li>Change a price</li><li>Offer a discount</li><li>Extend validity</li></ul></div>
+        </div>
+        <p class="muted" style="font-size:13px;margin:12px 0 0">Enforced by masked prompts, the six-check guardrail, prices calculated only by code, and Sales Head approval for anything above ${s.discountLimit}%.</p></div>
+    </div>
+  </div>`;
+};
+
+/* ---------- Drawer ---------- */
+function renderDrawer(){
+  const el=$('#drawer');
+  if(!S.sel){el.innerHTML='';document.body.classList.remove('lock');return}
+  document.body.classList.add('lock');
+  const q=Q(S.sel), L=lines(q), miss=missingFields(q), canStatus=!['Won','Lost'].includes(q.status);
+  const tl=[...q.activity].sort((a,b)=>a.t-b.t).map(a=>`<li class="${a.kind}">${esc(a.text)}<small>${fmtDT(a.t)}</small></li>`).join('');
+  const drafts=q.drafts.map(d=>`<div class="dbox"><div class="row"><span class="tag ${d.status.startsWith('Sent')?'green':'amber'}">${esc(d.kind)}</span><span class="muted" style="font-size:12.5px">${fmtDT(d.t)}</span></div>
+    ${d.note?`<div class="muted" style="font-size:13px;margin-top:6px">${esc(d.note)}</div>`:''}
+    <div style="margin-top:8px;font-size:13.5px"><b>Subject:</b> ${esc(d.subject)}</div><pre>${esc(d.body)}</pre>
+    <div class="row"><span class="muted" style="font-size:13px">${esc(d.status)}</span><span class="sp"></span>${d.status.startsWith('Sent')?'':`<button class="btn sm ok" data-sent="${d.id}">Mark as sent</button>`}</div></div>`).join('');
+  el.innerHTML=`<div class="scrim" data-act="close"></div>
+  <aside class="panel" role="dialog" aria-modal="true" aria-label="Quote ${q.id}">
+    <div class="ph-head"><div><span class="stamp">${q.id}</span><h3>${esc(q.company)}</h3></div><button class="x" data-act="close" aria-label="Close">×</button></div>
+    <div class="row">${chip(q.status)}<span class="muted" style="font-size:13.5px">Follow-ups ${q.fu} / ${S.settings.maxFu} · Next: ${nextFU(q)}</span></div>
+    ${miss.length?`<div class="banner red" style="margin-top:14px"><span>!</span><span><b>Data Error:</b> ${esc(miss.join(', '))} missing. Nothing will be sent until it is fixed.</span></div>`:''}
+    <div class="meta">
+      <div><small>Contact</small>${esc(q.contact)}</div>
+      <div><small>Customer e-mail</small>${q.email?esc(q.email):'<span style="color:var(--red)">Missing</span>'}</div>
+      <div><small>Salesperson</small>${esc(q.sp)}</div>
+      <div><small>Sent · valid until</small>${fmtD(q.sentDate)} · ${fmtD(q.validUntil)}</div>
+      ${q.revisedP!=null?`<div><small>Approved discount</small>${q.discountPct}% · revised ${inr(q.revisedP)}</div>`:''}
+    </div>
+    ${!q.email?`<div class="field"><label for="fix-email">Add customer e-mail to clear the Data Error</label><div class="row"><input id="fix-email" type="email" placeholder="riya.jain@navkarelectronics.example" style="flex:1;min-width:0;border:1px solid var(--line);border-radius:8px;padding:8px 10px"><button class="btn navy" data-act="fixemail">Save e-mail</button></div></div>`:''}
+    <div class="sec"><h5>Line items</h5><div class="tbl-wrap" style="margin:0;padding:0"><table style="min-width:440px"><thead><tr><th>Item</th><th class="num">Qty</th><th class="num">Rate</th><th class="num">Amount</th></tr></thead><tbody>
+      ${L.map(l=>`<tr><td>${esc(l.desc)}<div class="sm mono">${l.code}</div></td><td class="num">${qty(l.n)}</td><td class="num">${rate(l.p)}</td><td class="num">${inr(l.amt)}</td></tr>`).join('')}
+      <tr><td colspan="3" style="font-weight:700">Total (calculated)</td><td class="num" style="font-weight:700">${inr(total(q))}</td></tr></tbody></table></div></div>
+    ${canStatus?`<div class="sec"><h5>Update status</h5><div class="row"><button class="btn ok" data-act="won">Mark Won</button><button class="btn danger" data-act="lost">Mark Lost</button><span class="muted" style="font-size:13px">Reminders stop immediately.</span></div></div>`:''}
+    ${q.drafts.length?`<div class="sec"><h5>Drafts for the salesperson</h5>${drafts}</div>`:''}
+    ${q.lastDraft?`<div class="sec"><button class="btn sm" data-act="viewdraft">Open last AI draft (${q.lastDraft.pass?'PASS':'BLOCKED'})</button></div>`:''}
+    <div class="sec"><h5>Activity timeline</h5><ul class="tl">${tl}</ul></div>
+  </aside>`;
+}
+
+/* ---------- Render ---------- */
+const TABS=[['dashboard','Dashboard'],['quotes','Quotes'],['check','Run daily check'],['draft','AI draft'],['replies','Reply simulator'],['approvals','Approvals'],['logs','Logs'],['prefs','Settings']];
+function renderTop(){
+  const k=kpis();
+  const badge={quotes:k.err?`<span class="badge red">${k.err}</span>`:'',approvals:k.wait?`<span class="badge">${k.wait}</span>`:'',check:k.due?`<span class="badge">${k.due}</span>`:''};
+  $('#tabs').innerHTML=TABS.map(([id,l])=>`<button class="tab ${S.view===id?'on':''}" data-go="${id}">${l}${badge[id]||''}</button>`).join('');
+  $('#role').value=S.role;
+  $('#testpill').hidden=!S.settings.testMode;
+}
+function renderView(){
+  $('#view').innerHTML=VIEWS[S.view]();
+  const c=$('#console'); if(c) c.scrollTop=c.scrollHeight;
+}
+function render(){renderTop();renderView();renderDrawer()}
+function go(v){S.view=v;S.sel=null;S.resetArm=false;render();window.scrollTo(0,0)}
+function toast(msg,kind=''){const t=document.createElement('div');t.className='toast '+kind;t.textContent=msg;$('#toast').appendChild(t);setTimeout(()=>t.remove(),3200)}
+
+/* ---------- Actions ---------- */
+function decideApproval(aid,action){
+  if(!isHead()){toast('Only the Sales Head can decide','bad');return}
+  const a=S.approvals.find(x=>x.id===aid), q=Q(a.qid);
+  let pct=null, revP=a.totalP;
+  if(action!=='reject'){
+    pct=parseFloat($('#pct-'+aid).value);
+    if(!(pct>0&&pct<=50)){toast('Enter a discount between 0.5% and 50%','bad');return}
+    revP=Math.round(a.totalP*(1-pct/100));
+  }
+  const by=who();
+  a.status={approve:'Approved',reject:'Rejected',counter:'Countered'}[action]; a.decidedPct=pct; a.revisedP=action==='reject'?null:revP; a.by=PEOPLE.head.name; a.decidedAt=new Date();
+  logAudit(q.id,`Approval ${a.id}`,'Pending',a.status+(pct!=null?` at ${pct}%`:''),by);
+  if(action!=='reject'){setF(q,'discountPct',pct,by);setF(q,'revisedP',revP,by)}
+  setF(q,'status','Replied',by);
+  const T=total(q), mid=action==='approve'
+    ?`Thank you for your message. We are pleased to offer a discount of ${pct}% on quotation ${q.id}.\n\nOriginal total: ${inr(T)}\nDiscount: ${pct}%\nRevised total: ${inr(revP)}`
+    :action==='counter'
+    ?`Thank you for your message. We cannot meet the discount you asked for, but we can offer ${pct}% on quotation ${q.id}.\n\nOriginal total: ${inr(T)}\nDiscount offered: ${pct}%\nRevised total: ${inr(revP)}`
+    :`Thank you for your message. After review, we are unable to offer a discount on quotation ${q.id}. Our quoted total of ${inr(T)} stands.`;
+  q.drafts.unshift({id:uid(),kind:'Reply after Sales Head decision',subject:`Re: Quotation ${q.id}`,t:new Date(),status:'Waiting for salesperson',
+    note:`Prepared by code from ${a.id} (${a.status}${pct!=null?`, ${pct}%`:''}). The AI did not set or calculate this price.`,
+    body:`Dear ${q.contact},\n\n${mid}\n\nAll other terms are unchanged. The quotation is valid until ${fmtD(q.validUntil)}.\n\nRegards,\n${q.sp}\nPrintPro Packaging, Ahmedabad`});
+  act(q,`Sales Head ${a.status.toLowerCase()} ${a.id}${pct!=null?` at ${pct}% → revised total ${inr(revP)}`:''}. Reply draft created for ${q.sp}.`,a.status==='Rejected'?'bad':'won');
+  logRun('success',`${a.id} ${a.status} by ${PEOPLE.head.name}${pct!=null?` at ${pct}% (code calculated ${inr(T)} × (1 − ${pct}/100) = ${inr(revP)})`:''}. Draft reply created for ${q.sp}.`,q.id);
+  render(); toast(`${a.id} ${a.status.toLowerCase()} · draft ready for ${q.sp}`,'ok');
+}
+function saveSettings(){
+  if(!isHead()){toast('Only the Sales Head can change settings','bad');return}
+  const s=S.settings, email=$('#set-email').value.trim(), limit=parseFloat($('#set-limit').value), max=parseInt($('#set-max').value,10);
+  const days=$('#set-days').value.split(/[,\s]+/).filter(Boolean).map(Number);
+  if(!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email)){toast('Sales Head e-mail is not valid','bad');return}
+  if(!(limit>=0&&limit<=50)){toast('Discount limit must be between 0 and 50','bad');return}
+  if(!(max>=1&&max<=5)){toast('Maximum follow-ups must be 1 to 5','bad');return}
+  if(!days.length||days.some(d=>!Number.isInteger(d)||d<1)||days.some((d,i)=>i&&d<=days[i-1])){toast('Follow-up days must be whole numbers in rising order, e.g. 2, 5, 9','bad');return}
+  if(days.length<max){toast(`Give at least ${max} follow-up days for ${max} follow-ups`,'bad');return}
+  const next={salesHeadEmail:email,discountLimit:limit,fuDays:days,maxFu:max,autoSend:$('#set-auto').checked,testMode:$('#set-test').checked};
+  const label={salesHeadEmail:'Sales Head e-mail',discountLimit:'Discount limit %',fuDays:'Follow-up days',maxFu:'Max follow-ups',autoSend:'Auto-send',testMode:'Test mode'};
+  const fmt=v=>Array.isArray(v)?v.join(', '):typeof v==='boolean'?(v?'On':'Off'):String(v);
+  let changed=0;
+  Object.keys(next).forEach(k=>{if(fmt(s[k])!==fmt(next[k])){logAudit(null,`Setting: ${label[k]}`,fmt(s[k]),fmt(next[k]));changed++}});
+  if(!changed){toast('No changes to save');return}
+  S.settings=next; logRun('info',`${changed} setting${changed>1?'s':''} changed by ${who()}.`);
+  render(); toast('Settings saved','ok');
+}
+
+document.addEventListener('click',e=>{
+  const t=e.target.closest('[data-act],[data-go],[data-open],[data-filter],[data-ltab],[data-preset],[data-dec],[data-sent]');
+  if(!t) return;
+  const d=t.dataset;
+  if(d.go){go(d.go);return}
+  if(d.open){S.sel=d.open;renderDrawer();return}
+  if(d.filter){S.qFilter=d.filter;renderView();return}
+  if(d.ltab){S.logTab=d.ltab;renderView();return}
+  if(d.preset){S.rv.text=PRESETS[+d.preset][1];renderView();$('#rv-text').focus();return}
+  if(d.dec){decideApproval(d.aid,d.dec);return}
+  if(d.sent){
+    const q=Q(S.sel), dr=q.drafts.find(x=>x.id===+d.sent), name=PEOPLE[S.role].name;
+    dr.status=`Sent by ${name} · ${fmtDT(new Date())}`;
+    logAudit(q.id,`Draft: ${dr.kind}`,'Waiting for salesperson','Sent');
+    if(dr.fuNo){setF(q,'fu',dr.fuNo);setF(q,'lastFollowUp',today)}
+    act(q,`${dr.kind} sent by ${name}${S.settings.testMode?' (test mode)':''}.`,'send');
+    logRun('success',`${q.id}: “${dr.subject}” sent by ${name}${S.settings.testMode?' (test mode – simulated)':''}.`,q.id);
+    render(); toast('Marked as sent','ok'); return;
+  }
+  const q=S.sel&&Q(S.sel);
+  switch(d.act){
+    case 'run': runCheck(); break;
+    case 'fast': if(S.run) S.run.fast=true; break;
+    case 'close': S.sel=null; renderDrawer(); break;
+    case 'ashead': S.role='head'; logRun('info','Now viewing as Harsh Trivedi (Sales Head).'); render(); break;
+    case 'won': case 'lost': {
+      const to=d.act==='won'?'Won':'Lost';
+      setF(q,'status',to); q.inbox=null;
+      S.approvals.filter(a=>a.qid===q.id&&a.status==='Pending').forEach(a=>{a.status='Closed';logAudit(q.id,`Approval ${a.id}`,'Pending',`Closed (quote ${to})`)});
+      act(q,`Status changed to ${to} by ${PEOPLE[S.role].name}. Reminders stopped.`,to==='Won'?'won':'bad');
+      logRun(to==='Won'?'success':'info',`${q.id} marked ${to} by ${who()}. Reminders stopped.`,q.id);
+      render(); toast(`${q.id} marked ${to}`,to==='Won'?'ok':''); break;
+    }
+    case 'fixemail': {
+      const v=$('#fix-email').value.trim();
+      if(!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(v)){toast('Enter a valid e-mail address','bad');return}
+      setF(q,'email',v); if(q.status==='Data Error') setF(q,'status','Open');
+      act(q,`Customer e-mail added by ${PEOPLE[S.role].name}. Data Error cleared.`,'won');
+      logRun('success',`${q.id}: customer e-mail added by ${who()}. Data Error cleared.`,q.id);
+      render(); toast('E-mail saved · Data Error cleared','ok'); break;
+    }
+    case 'viewdraft': loadDraft(q.id,false); go('draft'); break;
+    case 'gen': {
+      const cq=Q(S.dv.qid); loadDraft(cq.id,true);
+      const res=recordDraft(cq,{...S.dv},S.dv.checks,'AI draft preview'); S.dv.verdict=res.pass?'pass':'blocked';
+      logRun('info',`${cq.id}: AI draft preview generated (${res.pass?'PASS':'BLOCKED'}). Nothing sent.`,cq.id);
+      render(); break;
+    }
+    case 'bad': {
+      const cq=Q(S.dv.qid); loadDraft(cq.id,true);
+      S.dv.body=S.dv.body.replace(/(Quotation total: [^\n]+\n)/,`$1\n${BAD_LINE}\n`); S.dv.origin='Bad draft test';
+      S.dv.checks=guardrail(cq,S.dv.subject,S.dv.body);
+      const res=recordDraft(cq,{...S.dv},S.dv.checks,'Bad draft test'); S.dv.verdict=res.pass?'pass':'blocked';
+      render(); toast(res.pass?'Guardrail passed':`Blocked for ${res.fails.length} reasons · Draft for human saved`,res.pass?'ok':'bad'); break;
+    }
+    case 'check': {
+      const cq=Q(S.dv.qid); S.dv.subject=$('#dv-subj').value; S.dv.body=$('#dv-body').value;
+      if(S.dv.origin!=='Bad draft test') S.dv.origin='Edited draft';
+      S.dv.checks=guardrail(cq,S.dv.subject,S.dv.body);
+      const res=recordDraft(cq,{...S.dv},S.dv.checks,'AI draft screen'); S.dv.verdict=res.pass?'pass':'blocked';
+      if(res.pass) logRun('info',`${cq.id}: guardrail run on edited draft → PASS. Nothing sent.`,cq.id);
+      render(); toast(res.pass?'Guardrail PASS':`Blocked for ${res.fails.length} reason${res.fails.length>1?'s':''}`,res.pass?'ok':'bad'); break;
+    }
+    case 'classify': {
+      const txt=$('#rv-text').value.trim();
+      if(!txt){toast('Type or pick a customer reply first','bad');return}
+      S.rv.text=txt; S.rv.result=processReply(Q(S.rv.qid),txt,'Reply simulator');
+      render(); break;
+    }
+    case 'save': saveSettings(); break;
+    case 'reset':
+      if(!S.resetArm){S.resetArm=true;renderView();return}
+      S=initialState(); render(); toast('Demo data reset','ok'); break;
+  }
+});
+document.addEventListener('change',e=>{
+  const id=e.target.id;
+  if(id==='role'){S.role=e.target.value;logRun('info',`Now viewing as ${who()}.`);render()}
+  if(id==='dv-q'){loadDraft(e.target.value,false);renderView()}
+  if(id==='rv-q'){S.rv.qid=e.target.value;S.rv.result=null;renderView()}
+});
+document.addEventListener('input',e=>{
+  const el=e.target;
+  if(el.id==='rv-text') S.rv.text=el.value;
+  if(el.classList.contains('pct-in')){
+    const a=S.approvals.find(x=>x.id===el.dataset.aid), p=parseFloat(el.value);
+    const ok=p>0&&p<=50;
+    $('#rev-'+a.id).textContent=ok?inr(Math.round(a.totalP*(1-p/100))):'—';
+    $('#eq-'+a.id).textContent=ok?`${inr(a.totalP)} × (1 − ${p}/100)`:'Enter a % between 0.5 and 50';
+  }
+});
+document.addEventListener('keydown',e=>{if(e.key==='Escape'&&S.sel){S.sel=null;renderDrawer()}});
+
+render();
+</script>
+
+</body>
+</html>
